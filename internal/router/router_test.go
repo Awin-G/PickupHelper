@@ -5,19 +5,42 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"pickup-helper/internal/config"
 	"pickup-helper/internal/handler"
+	"pickup-helper/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func mustConfig() *config.Config {
 	return &config.Config{
 		CORS:      config.CORSConfig{AllowedOrigins: []string{"*"}},
 		RateLimit: config.RateLimitConfig{QPS: 0, Burst: 0}, // disabled
-		JWT:       config.JWTConfig{AccessSecret: "test-secret"},
+		JWT: config.JWTConfig{
+			AccessSecret: "test-secret",
+			AccessTTL:    time.Hour,
+		},
 	}
+}
+
+func signTestToken(t *testing.T, secret string, userID int64) string {
+	t.Helper()
+	claims := middleware.Claims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		},
+	}
+	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	s, err := tok.SignedString([]byte(secret))
+	if err != nil {
+		t.Fatalf("sign token: %v", err)
+	}
+	return s
 }
 
 // TestRegister_MiddlewareChain verifies the wired-in middleware chain
@@ -106,12 +129,8 @@ func TestRegister_APIV1RequiresJWT(t *testing.T) {
 	hh := handler.NewHealthHandler(nil, nil)
 	Register(engine, mustConfig(), hh)
 
-	// Add a dummy route inside /api/v1 so gin doesn't return 404.
-	NewAPIV1Group(engine, mustConfig()).GET("/ping", func(c *gin.Context) {
-		c.Status(200)
-	})
-
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/ping", nil)
+	// /api/v1/anything doesn't exist as a route, but NoRoute re-runs JWT.
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/anything", nil)
 	rr := httptest.NewRecorder()
 	engine.ServeHTTP(rr, req)
 
@@ -122,6 +141,33 @@ func TestRegister_APIV1RequiresJWT(t *testing.T) {
 	_ = json.Unmarshal(rr.Body.Bytes(), &body)
 	if body["code"] != float64(10002) {
 		t.Errorf("code = %v, want 10002", body["code"])
+	}
+}
+
+// TestRegister_APIV1ValidTokenReturns404 verifies that with a valid token,
+// an unmatched /api/v1/* route returns 404 (not 401).
+func TestRegister_APIV1ValidTokenReturns404(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	engine := gin.New()
+
+	cfg := mustConfig()
+	hh := handler.NewHealthHandler(nil, nil)
+	Register(engine, cfg, hh)
+
+	// Build a valid token and request a non-existent route.
+	tok := signTestToken(t, cfg.JWT.AccessSecret, 1)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/nonexistent", nil)
+	req.Header.Set("Authorization", "Bearer "+tok)
+	rr := httptest.NewRecorder()
+	engine.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404 (valid token, route not found)", rr.Code)
+	}
+	var body map[string]any
+	_ = json.Unmarshal(rr.Body.Bytes(), &body)
+	if body["code"] != float64(10004) {
+		t.Errorf("code = %v, want 10004 (ErrNotFound)", body["code"])
 	}
 }
 

@@ -1,7 +1,10 @@
 package router
 
 import (
+	"strings"
+
 	"pickup-helper/internal/config"
+	apperrors "pickup-helper/internal/errors"
 	"pickup-helper/internal/handler"
 	"pickup-helper/internal/middleware"
 
@@ -20,7 +23,10 @@ import (
 //
 // /api/v1 group additionally mounts JWTAuth so all sub-routes require a
 // valid access token. Sub-groups that allow public access (e.g. /auth/*)
-// should be registered on a fresh group WITHOUT the JWT middleware.
+// should be registered on a fresh group WITHOUT copying the middleware.
+//
+// engine.NoRoute enforces JWT for unmatched /api/v1/* paths so that
+// `curl /api/v1/anything` without a token returns 401 (not 404).
 func Register(engine *gin.Engine, cfg *config.Config, h *handler.HealthHandler) {
 	engine.Use(
 		middleware.Recovery(),
@@ -33,8 +39,30 @@ func Register(engine *gin.Engine, cfg *config.Config, h *handler.HealthHandler) 
 	// Public health endpoints (no JWT).
 	h.Register(engine)
 
-	// Authenticated API v1 group — every sub-route requires a valid token.
+	// Authenticated API v1 group — Phase 2+ adds business routes here
+	// via NewAPIV1Group. No routes yet, so the group itself is a no-op;
+	// the NoRoute handler below enforces JWT for unmatched /api/v1/* paths.
 	NewAPIV1Group(engine, cfg)
+
+	// NoRoute: enforce JWT for unmatched /api/v1/* paths.
+	// Without this, `GET /api/v1/nonexistent` would return 404 (bypassing
+	// the group's JWT middleware) and leak the existence of routes. By
+	// re-running JWTAuth here, unauthenticated requests get 401, and
+	// authenticated requests get a proper 404 envelope.
+	jwtAuth := middleware.JWTAuth(cfg)
+	engine.NoRoute(func(c *gin.Context) {
+		if !strings.HasPrefix(c.Request.URL.Path, "/api/v1/") {
+			handler.Error(c, apperrors.New(apperrors.ErrNotFound, "route not found"))
+			return
+		}
+		// Re-run JWT validation for unmatched API routes.
+		jwtAuth(c)
+		if c.IsAborted() {
+			return // JWT rejected — 401 already written.
+		}
+		// Token valid but route doesn't exist → 404.
+		handler.Error(c, apperrors.New(apperrors.ErrNotFound, "route not found"))
+	})
 }
 
 // NewAPIV1Group creates the authenticated /api/v1 group. Phase 2+ will

@@ -6,10 +6,10 @@ MYSQL_DSN := "root:1973@tcp(127.0.0.1:3306)/pickup_helper?parseTime=true&loc=Asi
 MYSQL_DB := pickup_helper
 
 run:
-	APP_ENV=$(APP_ENV) go run cmd/server/main.go
+	APP_ENV=$(APP_ENV) go run ./cmd/server
 
 build:
-	go build -o $(BIN) cmd/server/main.go
+	go build -o $(BIN) ./cmd/server
 
 test:
 	go test ./... -race -count=1
