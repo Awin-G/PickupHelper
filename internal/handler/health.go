@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	apperrors "pickup-helper/internal/errors"
 	"pickup-helper/internal/log"
 
 	"github.com/gin-gonic/gin"
@@ -22,9 +23,6 @@ type RedisPinger interface {
 	Ping(ctx context.Context) *redis.StatusCmd
 }
 
-// codeInternalError mirrors the unified error code scheme from api详细设计.md (10009).
-const codeInternalError = 10009
-
 type HealthHandler struct {
 	db  Pinger
 	rdb RedisPinger
@@ -42,44 +40,35 @@ func (h *HealthHandler) Register(engine *gin.Engine) {
 
 // Live is the liveness probe — always returns up when the process is alive.
 func (h *HealthHandler) Live(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"msg":  "success",
-		"data": gin.H{"status": "up"},
-		"trace_id": log.TraceID(c.Request.Context()),
-	})
+	Success(c, gin.H{"status": "up"})
 }
 
 // Ready is the readiness probe — checks MySQL and Redis connectivity.
+// Failures return HTTP 503 + code=10009 (matches plan 01-01 contract).
 func (h *HealthHandler) Ready(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceID := log.TraceID(ctx)
 
 	if h.db != nil {
 		if err := h.db.PingContext(ctx); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"code":    codeInternalError,
-				"msg":     "mysql unavailable",
-				"trace_id": traceID,
+			c.JSON(http.StatusServiceUnavailable, Response{
+				Code:    apperrors.ErrInternal,
+				Msg:     "mysql unavailable",
+				TraceID: traceID,
 			})
 			return
 		}
 	}
 	if h.rdb != nil {
 		if err := h.rdb.Ping(ctx).Err(); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"code":    codeInternalError,
-				"msg":     "redis unavailable",
-				"trace_id": traceID,
+			c.JSON(http.StatusServiceUnavailable, Response{
+				Code:    apperrors.ErrInternal,
+				Msg:     "redis unavailable",
+				TraceID: traceID,
 			})
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"msg":  "success",
-		"data": gin.H{"status": "ready"},
-		"trace_id": traceID,
-	})
+	Success(c, gin.H{"status": "ready"})
 }

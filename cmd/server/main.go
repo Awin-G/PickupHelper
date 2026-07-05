@@ -36,7 +36,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
 	healthH := handler.NewHealthHandler(container.DB, container.RDB)
-	router.Register(engine, healthH)
+	router.Register(engine, cfg, healthH)
 
 	srv := server.New(cfg, engine)
 	log.From(ctx).InfoContext(ctx, "server starting", "addr", srv.Addr())
