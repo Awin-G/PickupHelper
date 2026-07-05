@@ -1,6 +1,9 @@
 # GSD planning artifacts - kept local per project config
 .planning/
 
+# Trae IDE local skill/agent install (machine-local)
+.trae/
+
 # Go
 *.exe
 *.exe~
