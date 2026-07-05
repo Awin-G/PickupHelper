@@ -1,0 +1,33 @@
+# GSD planning artifacts - kept local per project config
+.planning/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/vendor/
+go.work.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local env / secrets
+.env
+.env.local
+*.local
+
+# Build / cache
+/tmp/
+*.log
