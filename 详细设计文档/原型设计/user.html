@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户管理 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #304156; color: #fff; padding-top: 20px; }
+    .sidebar-logo { padding: 0 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.3s; }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    .submenu { padding-left: 50px; }
+    .submenu .menu-item { padding: 8px 20px; font-size: 14px; }
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    .header { height: 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 筛选区域 */
+    .filter-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .filter-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filter-item { display: flex; flex-direction: column; gap: 6px; }
+    .filter-item label { font-size: 13px; color: #606266; }
+    .filter-actions { display: flex; gap: 8px; margin-left: auto; }
+    
+    /* 表格区域 */
+    .table-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .table-header h3 { font-size: 16px; color: #303133; }
+    
+    .type-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .type-tag.receiver { background: #ecf5ff; color: #409eff; }
+    .type-tag.runner { background: #f0f9eb; color: #67c23a; }
+    
+    .blacklist-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .blacklist-tag.no { background: #f0f9eb; color: #67c23a; }
+    .blacklist-tag.yes { background: #fef0f0; color: #f56c6c; }
+    
+    .credit-score {
+      font-weight: 600;
+    }
+    .credit-score.high { color: #67c23a; }
+    .credit-score.medium { color: #e6a23c; }
+    .credit-score.low { color: #f56c6c; }
+    
+    .pagination {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #ebeef5;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item"><span class="icon">🏠</span><span>工作台</span></div>
+        <div class="menu-item"><span class="icon">📦</span><span>包裹管理</span></div>
+        <div class="menu-item"><span class="icon">✅</span><span>出库核销</span></div>
+        <div class="menu-item"><span class="icon">🗄️</span><span>货架管理</span></div>
+        <div class="menu-item"><span class="icon">🚚</span><span>代取订单</span></div>
+        <div class="menu-item active"><span class="icon">👥</span><span>用户管理</span></div>
+        <div class="submenu">
+          <div class="menu-item active"><span>用户列表</span></div>
+          <div class="menu-item"><span>跑腿员审核</span></div>
+        </div>
+        <div class="menu-item"><span class="icon">📊</span><span>数据统计</span></div>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <header class="header">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>用户管理</el-breadcrumb-item>
+          <el-breadcrumb-item>用户列表</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="header-right">
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <div class="content">
+        <div class="page-header">
+          <h2>用户管理</h2>
+        </div>
+        
+        <!-- 筛选区域 -->
+        <div class="filter-card">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label>搜索</label>
+              <el-input placeholder="手机号/姓名" style="width: 200px;" />
+            </div>
+            <div class="filter-item">
+              <label>用户类型</label>
+              <el-select placeholder="全部类型" style="width: 140px;" clearable>
+                <el-option label="收件人" value="1" />
+                <el-option label="跑腿员" value="2" />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label>黑名单</label>
+              <el-select placeholder="全部" style="width: 120px;" clearable>
+                <el-option label="正常" value="0" />
+                <el-option label="黑名单" value="1" />
+              </el-select>
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary">查询</el-button>
+              <el-button>重置</el-button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 表格区域 -->
+        <div class="table-card">
+          <div class="table-header">
+            <h3>用户列表 <span style="color: #909399; font-size: 14px;">共 1,256 条</span></h3>
+          </div>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f7fa;">
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">手机号</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">姓名</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">类型</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">信用分</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">黑名单</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">注册时间</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">138****0000</td>
+                <td style="padding: 12px;">张三</td>
+                <td style="padding: 12px;"><span class="type-tag receiver">收件人</span></td>
+                <td style="padding: 12px;"><span class="credit-score high">100</span></td>
+                <td style="padding: 12px;"><span class="blacklist-tag no">正常</span></td>
+                <td style="padding: 12px;">2024-01-10</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">取件记录</el-button>
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">139****1111</td>
+                <td style="padding: 12px;">李四</td>
+                <td style="padding: 12px;"><span class="type-tag runner">跑腿员</span></td>
+                <td style="padding: 12px;"><span class="credit-score high">95</span></td>
+                <td style="padding: 12px;"><span class="blacklist-tag no">正常</span></td>
+                <td style="padding: 12px;">2024-01-08</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">取件记录</el-button>
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">137****2222</td>
+                <td style="padding: 12px;">王五</td>
+                <td style="padding: 12px;"><span class="type-tag receiver">收件人</span></td>
+                <td style="padding: 12px;"><span class="credit-score low">60</span></td>
+                <td style="padding: 12px;"><span class="blacklist-tag yes">黑名单</span></td>
+                <td style="padding: 12px;">2024-01-05</td>
+                <td style="padding: 12px;">
+                  <el-button type="danger" link size="small">移出黑名单</el-button>
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">136****3333</td>
+                <td style="padding: 12px;">赵六</td>
+                <td style="padding: 12px;"><span class="type-tag receiver">收件人</span></td>
+                <td style="padding: 12px;"><span class="credit-score high">100</span></td>
+                <td style="padding: 12px;"><span class="blacklist-tag no">正常</span></td>
+                <td style="padding: 12px;">2024-01-03</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">取件记录</el-button>
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">135****4444</td>
+                <td style="padding: 12px;">钱七</td>
+                <td style="padding: 12px;"><span class="type-tag runner">跑腿员</span></td>
+                <td style="padding: 12px;"><span class="credit-score medium">85</span></td>
+                <td style="padding: 12px;"><span class="blacklist-tag no">正常</span></td>
+                <td style="padding: 12px;">2024-01-01</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">取件记录</el-button>
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div class="pagination">
+            <el-pagination
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="1256"
+              :page-sizes="[10, 20, 50, 100]"
+              :page-size="20"
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({});
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>

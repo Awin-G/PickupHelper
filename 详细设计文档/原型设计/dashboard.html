@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工作台 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    
+    .app-container { display: flex; min-height: 100vh; }
+    
+    /* 侧边栏 */
+    .sidebar {
+      width: 220px;
+      background: #304156;
+      color: #fff;
+      padding-top: 20px;
+    }
+    .sidebar-logo {
+      padding: 0 20px 20px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.3s;
+    }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    
+    /* 主内容区 */
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    
+    /* 顶部栏 */
+    .header {
+      height: 60px;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #409eff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+    }
+    
+    /* 内容区 */
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 统计卡片 */
+    .stat-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .stat-card .label { font-size: 14px; color: #909399; margin-bottom: 8px; }
+    .stat-card .value { font-size: 28px; font-weight: 600; color: #303133; }
+    .stat-card .value.primary { color: #409eff; }
+    .stat-card .value.success { color: #67c23a; }
+    .stat-card .value.warning { color: #e6a23c; }
+    .stat-card .value.danger { color: #f56c6c; }
+    
+    /* 快捷操作 */
+    .quick-actions {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .quick-actions h3 { font-size: 16px; margin-bottom: 16px; color: #303133; }
+    .action-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 24px;
+      border: 1px solid #e4e7ed;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      min-width: 100px;
+    }
+    .action-btn:hover { border-color: #409eff; color: #409eff; }
+    .action-btn .icon { font-size: 24px; }
+    .action-btn .text { font-size: 14px; }
+    
+    /* 趋势图区域 */
+    .chart-section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .chart-section h3 { font-size: 16px; margin-bottom: 16px; color: #303133; }
+    .chart-placeholder {
+      height: 300px;
+      background: #f5f7fa;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #909399;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item active">
+          <span class="icon">🏠</span>
+          <span>工作台</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">📦</span>
+          <span>包裹管理</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">✅</span>
+          <span>出库核销</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">🗄️</span>
+          <span>货架管理</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">🚚</span>
+          <span>代取订单</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">👥</span>
+          <span>用户管理</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">📊</span>
+          <span>数据统计</span>
+        </div>
+      </nav>
+    </aside>
+    
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 顶部栏 -->
+      <header class="header">
+        <div class="header-left">
+          <el-breadcrumb separator="/">
+            <el-breadcrumb-item>首页</el-breadcrumb-item>
+            <el-breadcrumb-item>工作台</el-breadcrumb-item>
+          </el-breadcrumb>
+        </div>
+        <div class="header-right">
+          <el-badge :value="3" :max="99">
+            <el-button :icon="Bell" circle />
+          </el-badge>
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <!-- 内容区 -->
+      <div class="content">
+        <div class="page-header">
+          <h2>工作台</h2>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="color: #909399;">2024-01-15</span>
+            <el-select placeholder="选择驿站" style="width: 160px;" model-value="北门驿站">
+              <el-option label="北门驿站" value="1" />
+              <el-option label="南门驿站" value="2" />
+            </el-select>
+          </div>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="stat-cards">
+          <div class="stat-card">
+            <div class="label">今日入库</div>
+            <div class="value primary">128</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">今日出库</div>
+            <div class="value success">95</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">当前待取</div>
+            <div class="value warning">43</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">当前滞留</div>
+            <div class="value danger">5</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">货架占用率</div>
+            <div class="value">72.5%</div>
+          </div>
+        </div>
+        
+        <!-- 快捷操作 -->
+        <div class="quick-actions">
+          <h3>快捷操作</h3>
+          <div class="action-buttons">
+            <div class="action-btn">
+              <span class="icon">📥</span>
+              <span class="text">包裹入库</span>
+            </div>
+            <div class="action-btn">
+              <span class="icon">📤</span>
+              <span class="text">出库核销</span>
+            </div>
+            <div class="action-btn">
+              <span class="icon">🔍</span>
+              <span class="text">包裹查询</span>
+            </div>
+            <div class="action-btn">
+              <span class="icon">🗄️</span>
+              <span class="text">货架管理</span>
+            </div>
+            <div class="action-btn">
+              <span class="icon">📊</span>
+              <span class="text">数据统计</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 趋势图 -->
+        <div class="chart-section">
+          <h3>包裹趋势（近7天）</h3>
+          <div class="chart-placeholder">
+            📈 此处放置ECharts趋势图（入库量/出库量折线图）
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const { Bell } = ElementPlusIconsVue;
+    const app = Vue.createApp({
+      setup() {
+        return { Bell };
+      }
+    });
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>

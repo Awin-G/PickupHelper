@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>驿站管理 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #304156; color: #fff; padding-top: 20px; }
+    .sidebar-logo { padding: 0 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.3s; }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    .header { height: 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 筛选区域 */
+    .filter-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .filter-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filter-item { display: flex; flex-direction: column; gap: 6px; }
+    .filter-item label { font-size: 13px; color: #606266; }
+    .filter-actions { display: flex; gap: 8px; margin-left: auto; }
+    
+    /* 表格区域 */
+    .table-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    
+    .status-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .status-open { background: #f0f9eb; color: #67c23a; }
+    .status-closed { background: #f4f4f5; color: #909399; }
+    
+    .pagination {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #ebeef5;
+    }
+    
+    /* 弹窗表单 */
+    .dialog-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .dialog {
+      background: #fff;
+      border-radius: 8px;
+      width: 560px;
+      max-height: 80vh;
+      overflow: hidden;
+    }
+    .dialog-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #ebeef5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dialog-header h3 { font-size: 16px; }
+    .dialog-close { cursor: pointer; font-size: 20px; color: #909399; }
+    .dialog-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+    .dialog-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #ebeef5;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .form-row { margin-bottom: 16px; }
+    .form-row label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #606266;
+    }
+    .form-row label .required { color: #f56c6c; }
+    .form-row .el-input, .form-row .el-select { width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item"><span class="icon">🏠</span><span>工作台</span></div>
+        <div class="menu-item"><span class="icon">📦</span><span>包裹管理</span></div>
+        <div class="menu-item"><span class="icon">✅</span><span>出库核销</span></div>
+        <div class="menu-item"><span class="icon">🗄️</span><span>货架管理</span></div>
+        <div class="menu-item"><span class="icon">🚚</span><span>代取订单</span></div>
+        <div class="menu-item"><span class="icon">👥</span><span>用户管理</span></div>
+        <div class="menu-item"><span class="icon">📊</span><span>数据统计</span></div>
+        <div class="menu-item active"><span class="icon">🏢</span><span>驿站管理</span></div>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <header class="header">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>驿站管理</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="header-right">
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>系统管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <div class="content">
+        <div class="page-header">
+          <h2>驿站管理</h2>
+          <el-button type="primary">+ 新增驿站</el-button>
+        </div>
+        
+        <!-- 筛选区域 -->
+        <div class="filter-card">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label>搜索</label>
+              <el-input placeholder="名称/地址" style="width: 200px;" />
+            </div>
+            <div class="filter-item">
+              <label>状态</label>
+              <el-select placeholder="全部状态" style="width: 140px;" clearable>
+                <el-option label="营业中" value="1" />
+                <el-option label="休息中" value="0" />
+              </el-select>
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary">查询</el-button>
+              <el-button>重置</el-button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 表格区域 -->
+        <div class="table-card">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f7fa;">
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">驿站名称</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">地址</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">营业时间</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">状态</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">创建时间</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><strong>北门驿站</strong></td>
+                <td style="padding: 12px;">学校北门左侧</td>
+                <td style="padding: 12px;">09:00-20:00</td>
+                <td style="padding: 12px;"><span class="status-tag status-open">营业中</span></td>
+                <td style="padding: 12px;">2024-01-01</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">编辑</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><strong>南门驿站</strong></td>
+                <td style="padding: 12px;">学校南门超市旁</td>
+                <td style="padding: 12px;">09:00-21:00</td>
+                <td style="padding: 12px;"><span class="status-tag status-open">营业中</span></td>
+                <td style="padding: 12px;">2024-01-01</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">编辑</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><strong>东区驿站</strong></td>
+                <td style="padding: 12px;">东区宿舍楼下</td>
+                <td style="padding: 12px;">08:30-19:30</td>
+                <td style="padding: 12px;"><span class="status-tag status-closed">休息中</span></td>
+                <td style="padding: 12px;">2024-01-05</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">编辑</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><strong>西区驿站</strong></td>
+                <td style="padding: 12px;">西区食堂对面</td>
+                <td style="padding: 12px;">09:00-20:00</td>
+                <td style="padding: 12px;"><span class="status-tag status-open">营业中</span></td>
+                <td style="padding: 12px;">2024-01-10</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">编辑</el-button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div class="pagination">
+            <el-pagination
+              layout="total, prev, pager, next"
+              :total="4"
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 新增/编辑驿站弹窗示例 -->
+  <div class="dialog-overlay">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h3>新增驿站</h3>
+        <span class="dialog-close">×</span>
+      </div>
+      <div class="dialog-body">
+        <div class="form-row">
+          <label>驿站名称 <span class="required">*</span></label>
+          <el-input placeholder="请输入驿站名称" />
+        </div>
+        <div class="form-row">
+          <label>地址 <span class="required">*</span></label>
+          <el-input placeholder="请输入详细地址" />
+        </div>
+        <div class="form-row">
+          <label>经纬度 <span class="required">*</span></label>
+          <div style="display: flex; gap: 12px;">
+            <el-input placeholder="纬度" />
+            <el-input placeholder="经度" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>营业时间</label>
+          <el-input placeholder="默认 09:00-20:00" model-value="09:00-20:00" />
+        </div>
+        <div class="form-row">
+          <label>状态</label>
+          <el-select placeholder="请选择状态" model-value="1" style="width: 100%;">
+            <el-option label="营业中" value="1" />
+            <el-option label="休息中" value="0" />
+          </el-select>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <el-button>取消</el-button>
+        <el-button type="primary">确定</el-button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({});
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>

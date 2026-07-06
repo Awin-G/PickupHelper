@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出库核销 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #304156; color: #fff; padding-top: 20px; }
+    .sidebar-logo { padding: 0 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.3s; }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    .header { height: 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 核销区域 */
+    .verify-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    .verify-card h3 {
+      font-size: 18px;
+      color: #303133;
+      margin-bottom: 24px;
+    }
+    .verify-icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    .verify-input-group {
+      display: flex;
+      gap: 12px;
+      max-width: 400px;
+      margin: 0 auto 24px;
+    }
+    .verify-input-group .el-input { flex: 1; }
+    .verify-btn {
+      min-width: 200px;
+      height: 48px;
+      font-size: 16px;
+    }
+    .verify-tips {
+      margin-top: 16px;
+      color: #909399;
+      font-size: 14px;
+    }
+    
+    /* 核销方式选择 */
+    .mode-selector {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .mode-option {
+      padding: 16px 32px;
+      border: 2px solid #e4e7ed;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .mode-option:hover { border-color: #409eff; }
+    .mode-option.active { border-color: #409eff; background: #ecf5ff; }
+    .mode-option .icon { font-size: 24px; margin-bottom: 8px; }
+    .mode-option .text { font-size: 14px; color: #303133; }
+    
+    /* 最近核销记录 */
+    .record-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .record-card h3 {
+      font-size: 16px;
+      color: #303133;
+      margin-bottom: 16px;
+    }
+    .record-table { width: 100%; border-collapse: collapse; }
+    .record-table th, .record-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ebeef5;
+    }
+    .record-table th {
+      background: #f5f7fa;
+      color: #909399;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .record-table td { font-size: 14px; color: #303133; }
+    
+    .success-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #f0f9eb;
+      color: #67c23a;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .failed-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #fef0f0;
+      color: #f56c6c;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    /* 核销成功动画 */
+    .success-animation {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .success-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      min-width: 320px;
+    }
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 16px;
+      background: #f0f9eb;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: #67c23a;
+    }
+    .success-box h3 { font-size: 18px; margin-bottom: 8px; }
+    .success-box p { color: #909399; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item"><span class="icon">🏠</span><span>工作台</span></div>
+        <div class="menu-item"><span class="icon">📦</span><span>包裹管理</span></div>
+        <div class="menu-item active"><span class="icon">✅</span><span>出库核销</span></div>
+        <div class="menu-item"><span class="icon">🗄️</span><span>货架管理</span></div>
+        <div class="menu-item"><span class="icon">🚚</span><span>代取订单</span></div>
+        <div class="menu-item"><span class="icon">👥</span><span>用户管理</span></div>
+        <div class="menu-item"><span class="icon">📊</span><span>数据统计</span></div>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <header class="header">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>出库核销</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="header-right">
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <div class="content">
+        <div class="page-header">
+          <h2>出库核销</h2>
+        </div>
+        
+        <!-- 核销方式选择 -->
+        <div class="mode-selector">
+          <div class="mode-option active">
+            <div class="icon">📷</div>
+            <div class="text">扫码核销</div>
+          </div>
+          <div class="mode-option">
+            <div class="icon">⌨️</div>
+            <div class="text">手动输入</div>
+          </div>
+        </div>
+        
+        <!-- 核销输入区 -->
+        <div class="verify-card">
+          <div class="verify-icon">📦</div>
+          <h3>请扫描取件码或手动输入</h3>
+          
+          <div class="verify-input-group">
+            <el-input 
+              placeholder="请输入6位取件码" 
+              size="large"
+              maxlength="6"
+              style="text-align: center;"
+            />
+            <el-button type="primary" size="large">📷 扫码</el-button>
+          </div>
+          
+          <el-button type="success" class="verify-btn" size="large">
+            ✅ 确认核销出库
+          </el-button>
+          
+          <div class="verify-tips">
+            💡 提示：请确保用户出示的取件码与包裹匹配，核销后包裹状态将变更为"已取件"
+          </div>
+        </div>
+        
+        <!-- 最近核销记录 -->
+        <div class="record-card">
+          <h3>最近核销记录（今日）</h3>
+          <table class="record-table">
+            <thead>
+              <tr>
+                <th>快递单号</th>
+                <th>快递公司</th>
+                <th>取件码</th>
+                <th>收件人</th>
+                <th>核销方式</th>
+                <th>核销时间</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>SF1234567890</td>
+                <td>顺丰速运</td>
+                <td><span style="font-family: monospace; font-weight: 600;">852741</span></td>
+                <td>138****0000</td>
+                <td>扫码核销</td>
+                <td>2024-01-15 11:30</td>
+                <td><span class="success-tag">成功</span></td>
+              </tr>
+              <tr>
+                <td>YT9876543210</td>
+                <td>圆通速递</td>
+                <td><span style="font-family: monospace; font-weight: 600;">369258</span></td>
+                <td>139****1111</td>
+                <td>手动输入</td>
+                <td>2024-01-15 11:25</td>
+                <td><span class="success-tag">成功</span></td>
+              </tr>
+              <tr>
+                <td>ZTO111222333</td>
+                <td>中通快递</td>
+                <td><span style="font-family: monospace; font-weight: 600;">000000</span></td>
+                <td>-</td>
+                <td>手动输入</td>
+                <td>2024-01-15 11:20</td>
+                <td><span class="failed-tag">取件码错误</span></td>
+              </tr>
+              <tr>
+                <td>YD444555666</td>
+                <td>韵达快递</td>
+                <td><span style="font-family: monospace; font-weight: 600;">951753</span></td>
+                <td>136****3333</td>
+                <td>扫码核销</td>
+                <td>2024-01-15 11:15</td>
+                <td><span class="success-tag">成功</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 核销成功弹窗 -->
+  <div class="success-animation" style="display: flex;">
+    <div class="success-box">
+      <div class="success-icon">✓</div>
+      <h3>核销成功</h3>
+      <p>包裹已出库，取件码已失效</p>
+      <el-button type="primary">继续核销</el-button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({});
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>

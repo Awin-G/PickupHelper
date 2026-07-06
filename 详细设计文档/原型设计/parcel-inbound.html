@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>包裹入库 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    
+    .app-container { display: flex; min-height: 100vh; }
+    
+    /* 侧边栏 */
+    .sidebar {
+      width: 220px;
+      background: #304156;
+      color: #fff;
+      padding-top: 20px;
+    }
+    .sidebar-logo {
+      padding: 0 20px 20px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.3s;
+    }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    .submenu { padding-left: 50px; }
+    .submenu .menu-item { padding: 8px 20px; font-size: 14px; }
+    
+    /* 主内容区 */
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    
+    /* 顶部栏 */
+    .header {
+      height: 60px;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #409eff; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 14px;
+    }
+    
+    /* 内容区 */
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 入库表单卡片 */
+    .form-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .form-card h3 {
+      font-size: 16px;
+      color: #303133;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #ebeef5;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .form-row.full { grid-template-columns: 1fr; }
+    .form-item { display: flex; flex-direction: column; gap: 8px; }
+    .form-item label {
+      font-size: 14px;
+      color: #606266;
+      font-weight: 500;
+    }
+    .form-item label .required { color: #f56c6c; margin-left: 4px; }
+    
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #ebeef5;
+    }
+    
+    .tag-group { display: flex; gap: 12px; }
+    .tag-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .tag-option:hover { border-color: #409eff; }
+    .tag-option.active { border-color: #409eff; background: #ecf5ff; color: #409eff; }
+    
+    /* 最近入库记录 */
+    .record-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .record-card h3 {
+      font-size: 16px;
+      color: #303133;
+      margin-bottom: 16px;
+    }
+    .record-table { width: 100%; border-collapse: collapse; }
+    .record-table th, .record-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ebeef5;
+    }
+    .record-table th {
+      background: #f5f7fa;
+      color: #909399;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .record-table td { font-size: 14px; color: #303133; }
+    .record-table tr:hover td { background: #f5f7fa; }
+    
+    .pickup-code {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #ecf5ff;
+      color: #409eff;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item">
+          <span class="icon">🏠</span>
+          <span>工作台</span>
+        </div>
+        <div class="menu-item active">
+          <span class="icon">📦</span>
+          <span>包裹管理</span>
+        </div>
+        <div class="submenu">
+          <div class="menu-item active">
+            <span>包裹入库</span>
+          </div>
+          <div class="menu-item">
+            <span>包裹列表</span>
+          </div>
+          <div class="menu-item">
+            <span>批量导入</span>
+          </div>
+        </div>
+        <div class="menu-item">
+          <span class="icon">✅</span>
+          <span>出库核销</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">🗄️</span>
+          <span>货架管理</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">🚚</span>
+          <span>代取订单</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">👥</span>
+          <span>用户管理</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">📊</span>
+          <span>数据统计</span>
+        </div>
+      </nav>
+    </aside>
+    
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <header class="header">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>包裹管理</el-breadcrumb-item>
+          <el-breadcrumb-item>包裹入库</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="header-right">
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <div class="content">
+        <div class="page-header">
+          <h2>包裹入库</h2>
+        </div>
+        
+        <!-- 入库模式选择 -->
+        <div class="form-card">
+          <h3>入库模式</h3>
+          <el-radio-group model-value="scan" style="margin-bottom: 20px;">
+            <el-radio-button value="scan">扫码入库</el-radio-button>
+            <el-radio-button value="manual">手动入库</el-radio-button>
+          </el-radio-group>
+        </div>
+        
+        <!-- 入库表单 -->
+        <div class="form-card">
+          <h3>包裹信息</h3>
+          
+          <div class="form-row">
+            <div class="form-item">
+              <label>快递单号 <span class="required">*</span></label>
+              <div style="display: flex; gap: 8px;">
+                <el-input placeholder="扫码或手动输入快递单号" size="large" />
+                <el-button type="primary" size="large">扫码</el-button>
+              </div>
+            </div>
+            <div class="form-item">
+              <label>快递公司 <span class="required">*</span></label>
+              <el-select placeholder="自动识别或选择快递公司" size="large" style="width: 100%;">
+                <el-option label="顺丰速运" value="sf" />
+                <el-option label="圆通速递" value="yt" />
+                <el-option label="中通快递" value="zt" />
+                <el-option label="韵达快递" value="yd" />
+                <el-option label="申通快递" value="st" />
+                <el-option label="极兔速递" value="jt" />
+              </el-select>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-item">
+              <label>收件人手机号 <span class="required">*</span></label>
+              <el-input placeholder="输入手机号后自动匹配用户" size="large" />
+            </div>
+            <div class="form-item">
+              <label>收件人姓名</label>
+              <el-input placeholder="自动填充" size="large" disabled />
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-item">
+              <label>货架编号</label>
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <el-radio-group model-value="auto">
+                  <el-radio value="auto">自动分配</el-radio>
+                  <el-radio value="manual">手动选择</el-radio>
+                </el-radio-group>
+                <el-select placeholder="选择货架" size="large" style="width: 200px;" disabled>
+                  <el-option label="A-01 (8/10)" value="A-01" />
+                  <el-option label="A-02 (5/10)" value="A-02" />
+                  <el-option label="B-01 (3/10)" value="B-01" />
+                </el-select>
+              </div>
+            </div>
+            <div class="form-item">
+              <label>重量 (kg)</label>
+              <el-input placeholder="选填，默认0" size="large" />
+            </div>
+          </div>
+          
+          <div class="form-row full">
+            <div class="form-item">
+              <label>特殊标签</label>
+              <div class="tag-group">
+                <div class="tag-option">
+                  <input type="checkbox"> 易碎品
+                </div>
+                <div class="tag-option">
+                  <input type="checkbox"> 生鲜件
+                </div>
+                <div class="tag-option">
+                  <input type="checkbox"> 贵重物品
+                </div>
+                <div class="tag-option">
+                  <input type="checkbox"> 大件
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-row full">
+            <div class="form-item">
+              <label>备注</label>
+              <el-input type="textarea" :rows="2" placeholder="选填，最长255字符" />
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <el-button type="primary" size="large">
+              📥 确认入库
+            </el-button>
+            <el-button size="large">清空表单</el-button>
+          </div>
+        </div>
+        
+        <!-- 最近入库记录 -->
+        <div class="record-card">
+          <h3>最近入库记录（今日）</h3>
+          <table class="record-table">
+            <thead>
+              <tr>
+                <th>快递单号</th>
+                <th>快递公司</th>
+                <th>取件码</th>
+                <th>货架</th>
+                <th>收件人</th>
+                <th>入库时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>SF1234567890</td>
+                <td>顺丰速运</td>
+                <td><span class="pickup-code">852741</span></td>
+                <td>A-01</td>
+                <td>138****0000</td>
+                <td>2024-01-15 10:30</td>
+              </tr>
+              <tr>
+                <td>YT9876543210</td>
+                <td>圆通速递</td>
+                <td><span class="pickup-code">369258</span></td>
+                <td>B-02</td>
+                <td>139****1111</td>
+                <td>2024-01-15 10:25</td>
+              </tr>
+              <tr>
+                <td>ZTO111222333</td>
+                <td>中通快递</td>
+                <td><span class="pickup-code">147852</span></td>
+                <td>A-02</td>
+                <td>137****2222</td>
+                <td>2024-01-15 10:20</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({});
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>
