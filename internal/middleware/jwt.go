@@ -69,6 +69,38 @@ func ParseAccess(cfg *config.Config, tokenStr string) (*Claims, error) {
 	return claims, nil
 }
 
+// ParseRefresh parses and validates a refresh token against
+// cfg.JWT.RefreshSecret. Returns the wrapped error so callers can
+// distinguish ErrTokenExpired (→ ErrRefreshExpired) from other failures
+// (→ ErrRefreshInvalid).
+func ParseRefresh(cfg *config.Config, tokenStr string) (*Claims, error) {
+	claims := &Claims{}
+	_, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrTokenSignatureInvalid
+		}
+		return []byte(cfg.JWT.RefreshSecret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return claims, nil
+}
+
+// CurrentUser extracts the authenticated user's ID from the gin context.
+// Returns (0, false) when no authenticated user is present.
+func CurrentUser(c *gin.Context) (int64, bool) {
+	v, ok := c.Get("user_id")
+	if !ok {
+		return 0, false
+	}
+	id, ok := v.(int64)
+	if !ok || id <= 0 {
+		return 0, false
+	}
+	return id, true
+}
+
 // JWTAuth validates Bearer tokens in the Authorization header. On success
 // it stores claims in the gin context and overrides X-User-Id / X-User-Type /
 // X-Station-Id / X-Role headers so downstream services cannot be tricked by

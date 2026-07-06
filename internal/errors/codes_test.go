@@ -23,6 +23,27 @@ func TestHTTPStatus(t *testing.T) {
 		{ErrIdempotencyKey, http.StatusBadRequest},
 		{ErrUnknown, http.StatusInternalServerError},
 		{999999, http.StatusInternalServerError}, // unknown code
+		// User module
+		{ErrPhoneFormat, http.StatusBadRequest},
+		{ErrSMSTooFrequent, http.StatusForbidden},
+		{ErrSMSChannelFail, http.StatusInternalServerError},
+		{ErrPhoneBlacklisted, http.StatusForbidden},
+		{ErrCodeInvalid, http.StatusUnauthorized},
+		{ErrCodeUsed, http.StatusUnauthorized},
+		{ErrUserBlacklisted, http.StatusForbidden},
+		{ErrRefreshInvalid, http.StatusUnauthorized},
+		{ErrRefreshExpired, http.StatusUnauthorized},
+		{ErrNicknameTooLong, http.StatusBadRequest},
+		{ErrAvatarInvalid, http.StatusBadRequest},
+		{ErrRunnerDuplicate, http.StatusConflict},
+		{ErrIDCardInvalid, http.StatusBadRequest},
+		{ErrCreditLow, http.StatusForbidden},
+		{ErrAppNotFound, http.StatusNotFound},
+		{ErrAppNotPending, http.StatusConflict},
+		{ErrActionInvalid, http.StatusBadRequest},
+		{ErrAdminCredential, http.StatusUnauthorized},
+		{ErrAdminDisabled, http.StatusForbidden},
+		{ErrUserNotFound, http.StatusNotFound},
 	}
 	for _, c := range cases {
 		got := HTTPStatus(c.code)
@@ -47,6 +68,15 @@ func TestMsg(t *testing.T) {
 		{ErrInternal, "服务端内部错误"},
 		{ErrUnknown, "未知错误"},
 		{999999, "未知错误"}, // unknown code
+		// User module — sampling a few representative codes
+		{ErrPhoneFormat, "手机号格式错误"},
+		{ErrSMSTooFrequent, "短信发送频率超限"},
+		{ErrUserBlacklisted, "用户已被拉黑"},
+		{ErrRefreshExpired, "refresh_token 已过期"},
+		{ErrRunnerDuplicate, "已是跑腿员或审核中"},
+		{ErrAppNotFound, "跑腿员申请单不存在"},
+		{ErrAdminCredential, "用户名或密码错误"},
+		{ErrUserNotFound, "用户不存在"},
 	}
 	for _, c := range cases {
 		got := Msg(c.code)

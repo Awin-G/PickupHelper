@@ -113,6 +113,9 @@ func (u *User) ToDTO() *UserInfoDTO {
 // phonePattern matches 11-digit Chinese mobile numbers (1[3-9]xxxxxxxxx).
 var phonePattern = regexp.MustCompile(`^1[3-9]\d{9}$`)
 
+// IsValidPhone reports whether s is an 11-digit Chinese mobile number.
+func IsValidPhone(s string) bool { return phonePattern.MatchString(s) }
+
 // MaskPhone masks the middle 4 digits of an 11-digit Chinese phone number,
 // producing "138****8000". Strings of any other length are returned as-is.
 func MaskPhone(phone string) string {
