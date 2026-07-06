@@ -23,7 +23,7 @@ func setupEngine(env *TestEnv) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
 	h := handler.NewHealthHandler(env.DB, env.Rdb)
-	router.Register(engine, h)
+	router.Register(engine, env.Cfg, h)
 	return engine
 }
 
