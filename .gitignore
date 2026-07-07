@@ -1,45 +1,55 @@
-# GSD planning artifacts - kept local per project config
+# === Monorepo .gitignore (Go backend + Taro miniapp) ===
+
+# ----- Planning / IDE -----
 .planning/
-
-# Trae IDE local skill/agent install (machine-local)
 .trae/
-
-# Go
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-/bin/
-/vendor/
-go.work.sum
-
-# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# OS
+# ----- OS -----
 .DS_Store
 Thumbs.db
 
-# Local env / secrets
+# ----- Secrets / Local env (root level) -----
 .env
 .env.local
 *.local
 
-# Build / cache
+# ----- Go (backend) -----
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+/bin/
+/vendor/
+go.work.sum
+
+# Go test binaries (only in root / cmd / internal)
+/test/*.test
+/cmd/**/*.test
+/internal/**/*.test
+
+# ----- Build / Cache (root level) -----
 /tmp/
 *.log
 
-# Miniapp (Taro)
-miniapp/node_modules/
+# ----- Node / pnpm (monorepo) -----
+node_modules/
+
+# ----- Taro miniapp build output -----
 miniapp/dist/
 miniapp/deploy_versions/
 miniapp/.temp/
 miniapp/.rn_temp/
+
+# ----- Taro miniapp tooling cache -----
 miniapp/.swc/
-miniapp/.husky/_/
+miniapp/.eslintcache
+miniapp/.stylelintcache
+
+# ----- Husky internal -----
+miniapp/.husky/_
