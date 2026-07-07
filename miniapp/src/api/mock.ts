@@ -126,19 +126,20 @@ export const mockRoutes: Record<string, (config: RequestConfig) => Promise<any>>
     return mockParcels.find((p) => p.id === id) || mockParcels[0];
   },
   'GET /parcels/:id/pickup-code': async () => mockPickupCode,
+  // Proxy module
   'GET /proxy/tasks': async (config) => {
     const p = getParams(config);
     return paginate(mockTasks, p.page || 1, p.page_size || 20);
   },
   'POST /proxy/publish': async () => ({ id: 99 }),
   'POST /proxy/accept/:id': async () => mockOrders[0],
-  'GET /proxy/orders/:id': async () => mockOrders[0],
-  'GET /proxy/orders/my': async (config) => {
+  'POST /proxy/request-delivery/:id': async () => undefined,
+  'POST /proxy/confirm-delivery/:id': async () => undefined,
+  'POST /proxy/cancel': async () => undefined,
+  'GET /proxy/my-orders': async (config) => {
     const p = getParams(config);
     return paginate(mockOrders, p.page || 1, p.page_size || 20);
   },
-  'POST /proxy/orders/:id/confirm': async () => undefined,
-  'POST /proxy/orders/:id/cancel': async () => undefined,
   'GET /notifications': async (config) => {
     const p = getParams(config);
     return paginate(mockNotifications, p.page || 1, p.page_size || 20);

@@ -24,32 +24,33 @@ export const proxyApi = {
       method: 'POST',
     }),
 
-  /** 代取订单详情 */
-  getDetail: (id: number) =>
-    request<ProxyOrder>({
-      url: `/proxy/orders/${id}`,
+  /** 请求配送（跑腿员标记开始配送） */
+  requestDelivery: (id: number) =>
+    request<void>({
+      url: `/proxy/request-delivery/${id}`,
+      method: 'POST',
     }),
 
-  /** 我的代取订单 */
-  getMyOrders: (params: { role?: 'publisher' | 'taker'; page?: number; page_size?: number }) =>
-    request<PaginatedList<ProxyOrder>>({
-      url: '/proxy/orders/my',
-      params,
-    }),
-
-  /** 确认送达 */
+  /** 确认送达/收货 */
   confirmDelivery: (id: number, data: { accepted: boolean; reason?: string }) =>
     request<void>({
-      url: `/proxy/orders/${id}/confirm`,
+      url: `/proxy/confirm-delivery/${id}`,
       method: 'POST',
       data,
     }),
 
   /** 取消订单 */
-  cancelOrder: (id: number, reason: string) =>
+  cancelOrder: (data: { order_id: number; reason: string }) =>
     request<void>({
-      url: `/proxy/orders/${id}/cancel`,
+      url: '/proxy/cancel',
       method: 'POST',
-      data: { reason },
+      data,
+    }),
+
+  /** 我的代取订单 */
+  getMyOrders: (params?: { role?: 'publisher' | 'taker'; page?: number; page_size?: number }) =>
+    request<PaginatedList<ProxyOrder>>({
+      url: '/proxy/my-orders',
+      params,
     }),
 };
