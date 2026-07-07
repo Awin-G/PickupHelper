@@ -27,7 +27,8 @@ const (
 	PickupModuleStart = 10300
 	ProxyModuleStart  = 10400
 	ShelfModuleStart  = 10500
-	NotifyModuleStart = 10600
+	NotifyModuleStart  = 10600
+	StationModuleStart = 10700
 )
 
 // User module error codes (10101~10171) — see .planning/phases/02-user-module/02-CONTEXT.md.
@@ -102,6 +103,7 @@ const (
 	ErrProxyNotPublisher      = 10431 // 订单不存在或无权操作
 	ErrProxyNotPendingConfirm = 10432 // 订单状态非待确认
 	ErrProxyRejectNoReason    = 10433 // 拒绝时未提供原因
+	ErrProxyCancelOrderNotFound = 10441 // 订单不存在
 	ErrProxyCancelNotAllowed  = 10443 // 订单状态不允许取消
 
 	// Shelf module error codes (10501~10599) — see 详细设计文档/api详细设计.md 6.
@@ -110,6 +112,7 @@ const (
 	ErrShelfNotFound      = 10511 // 货架不存在
 	ErrShelfMaxBelowCurrent= 10512 // max_capacity 小于当前占用
 	ErrShelfCodeUsed      = 10513 // 货架编号已被占用
+	ErrShelfStationNotFound = 10503 // 驿站不存在
 
 	// Notification module error codes (10601~10699).
 	ErrNotifyNotFound = 10601 // 通知不存在
@@ -181,8 +184,10 @@ func HTTPStatus(code int) int {
 		return http.StatusNotFound
 	case ErrProxyNotRunner:
 		return http.StatusForbidden
+	case ErrProxyCancelOrderNotFound:
+		return http.StatusNotFound
 	// Shelf module — 10501~10513
-	case ErrShelfCodeExists, ErrShelfCodeUsed, ErrShelfMaxBelowCurrent:
+	case ErrShelfCodeExists, ErrShelfCodeUsed, ErrShelfMaxBelowCurrent, ErrShelfStationNotFound:
 		return http.StatusConflict
 	case ErrShelfCapacityInvalid:
 		return http.StatusBadRequest
@@ -345,6 +350,8 @@ func Msg(code int) string {
 		return "拒绝时未提供原因"
 	case ErrProxyCancelNotAllowed:
 		return "订单状态不允许取消"
+	case ErrProxyCancelOrderNotFound:
+		return "订单不存在"
 	// Shelf module — 10501~10513
 	case ErrShelfCodeExists:
 		return "货架编号已存在"
@@ -356,6 +363,8 @@ func Msg(code int) string {
 		return "最大容量小于当前占用"
 	case ErrShelfCodeUsed:
 		return "货架编号已被占用"
+	case ErrShelfStationNotFound:
+		return "驿站不存在"
 	case ErrNotifyNotFound:
 		return "通知不存在"
 	default:
