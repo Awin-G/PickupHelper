@@ -85,6 +85,24 @@ const (
 	ErrSelfCheckoutInvalid  = 10311 // 取件码无效
 	ErrSelfCheckoutGeoFar   = 10312 // 地理位置超距
 	ErrSelfCheckoutRisk     = 10313 // 风控触发
+
+	// Proxy module error codes (10401~10499) — see 详细设计文档/api详细设计.md 5.1~5.7.
+	ErrProxyParcelNotOwner    = 10401 // 包裹不存在或非本人
+	ErrProxyParcelNotPending  = 10402 // 包裹状态非待取
+	ErrProxyDuplicateOrder    = 10403 // 包裹已有进行中的代取订单
+	ErrProxyRewardOutOfRange  = 10404 // 悬赏金额超出范围
+	ErrProxyDeadlineInvalid   = 10405 // 截止时间不合法
+	ErrProxyOrderNotFound     = 10411 // 订单不存在
+	ErrProxyAlreadyTaken      = 10412 // 订单已被接单或已取消
+	ErrProxyNotRunner         = 10413 // 当前用户无跑腿员资质
+	ErrProxySelfAccept        = 10414 // 接单人与发布者为同一人
+	ErrProxyNotTaker          = 10421 // 订单不存在或无权操作
+	ErrProxyNotDelivering     = 10422 // 订单状态非配送中
+	ErrProxyPhotoInvalid      = 10423 // 照片数量超限或URL非法
+	ErrProxyNotPublisher      = 10431 // 订单不存在或无权操作
+	ErrProxyNotPendingConfirm = 10432 // 订单状态非待确认
+	ErrProxyRejectNoReason    = 10433 // 拒绝时未提供原因
+	ErrProxyCancelNotAllowed  = 10443 // 订单状态不允许取消
 )
 
 // HTTPStatus maps a business code to its HTTP status code.
@@ -142,6 +160,17 @@ func HTTPStatus(code int) int {
 		return http.StatusForbidden
 	case ErrPickupFreqLimit:
 		return http.StatusTooManyRequests
+	// Proxy module — 10401~10443
+	case ErrProxyParcelNotOwner, ErrProxyParcelNotPending, ErrProxyDuplicateOrder,
+		ErrProxyAlreadyTaken, ErrProxySelfAccept, ErrProxyNotTaker, ErrProxyNotDelivering,
+		ErrProxyNotPublisher, ErrProxyNotPendingConfirm, ErrProxyCancelNotAllowed:
+		return http.StatusConflict
+	case ErrProxyRewardOutOfRange, ErrProxyDeadlineInvalid, ErrProxyPhotoInvalid, ErrProxyRejectNoReason:
+		return http.StatusBadRequest
+	case ErrProxyOrderNotFound:
+		return http.StatusNotFound
+	case ErrProxyNotRunner:
+		return http.StatusForbidden
 	default:
 		// Module-specific codes default to 500 unless they fall in a
 		// known range. Phase 2+ can refine this as needed.
@@ -264,6 +293,39 @@ func Msg(code int) string {
 		return "地理位置超距"
 	case ErrSelfCheckoutRisk:
 		return "风控触发，需管理员介入"
+	// Proxy module — 10401~10443
+	case ErrProxyParcelNotOwner:
+		return "包裹不存在或非本人"
+	case ErrProxyParcelNotPending:
+		return "包裹状态非待取"
+	case ErrProxyDuplicateOrder:
+		return "包裹已有进行中的代取订单"
+	case ErrProxyRewardOutOfRange:
+		return "悬赏金额超出范围"
+	case ErrProxyDeadlineInvalid:
+		return "截止时间不合法"
+	case ErrProxyOrderNotFound:
+		return "订单不存在"
+	case ErrProxyAlreadyTaken:
+		return "订单已被接单或已取消"
+	case ErrProxyNotRunner:
+		return "当前用户无跑腿员资质"
+	case ErrProxySelfAccept:
+		return "接单人与发布者为同一人"
+	case ErrProxyNotTaker:
+		return "订单不存在或无权操作"
+	case ErrProxyNotDelivering:
+		return "订单状态非配送中"
+	case ErrProxyPhotoInvalid:
+		return "照片数量超限或URL非法"
+	case ErrProxyNotPublisher:
+		return "订单不存在或无权操作"
+	case ErrProxyNotPendingConfirm:
+		return "订单状态非待确认"
+	case ErrProxyRejectNoReason:
+		return "拒绝时未提供原因"
+	case ErrProxyCancelNotAllowed:
+		return "订单状态不允许取消"
 	default:
 		return "未知错误"
 	}
