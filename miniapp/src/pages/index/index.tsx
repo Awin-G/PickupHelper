@@ -1,5 +1,6 @@
 import { View, Text } from '@tarojs/components';
-import Taro, { useLoad, usePullDownRefresh, useReachBottom } from '@tarojs/taro';
+import Taro, { usePullDownRefresh, useReachBottom } from '@tarojs/taro';
+import { useState, useEffect } from 'react';
 import { useUserStore } from '@/stores/useUserStore';
 import { useParcelStore } from '@/stores/useParcelStore';
 import { useProxyStore } from '@/stores/useProxyStore';
@@ -14,16 +15,18 @@ export default function Index() {
   const { myParcels, pendingCount, loading, fetchMyParcels, loadMore } = useParcelStore();
   const { taskList, fetchTasks } = useProxyStore();
   const { unreadCount } = useNotificationStore();
+  const [initialized, setInitialized] = useState(false);
 
-  useLoad(() => {
-    if (isLoggedIn) {
+  useEffect(() => {
+    if (isLoggedIn && !initialized) {
       if (currentRole === 'receiver') {
         fetchMyParcels(true);
       } else {
         fetchTasks(undefined, true);
       }
+      setInitialized(true);
     }
-  });
+  }, [isLoggedIn, currentRole, initialized]);
 
   usePullDownRefresh(async () => {
     if (isLoggedIn) {

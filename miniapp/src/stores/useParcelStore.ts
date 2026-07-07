@@ -33,7 +33,6 @@ export const useParcelStore = create<ParcelState>((set, get) => ({
     try {
       const page = refresh ? 1 : state.currentPage;
       const result = await parcelApi.getMy({ page, page_size: PAGE_SIZE });
-
       set({
         myParcels: refresh ? result.list : [...state.myParcels, ...result.list],
         currentPage: page,

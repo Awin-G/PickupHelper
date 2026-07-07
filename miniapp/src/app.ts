@@ -7,11 +7,19 @@ import { storage } from '@/utils/storage';
 
 import './app.scss';
 
-const IS_DEV = process.env.NODE_ENV === 'development';
+// 兼容 H5 环境
+let IS_DEV = true;
+try {
+  if (typeof process !== 'undefined' && process.env) {
+    IS_DEV = process.env.NODE_ENV === 'development';
+  }
+} catch (e) {
+  IS_DEV = true;
+}
 
 function App({ children }: PropsWithChildren<any>) {
   useLaunch(async () => {
-    const { isLoggedIn, refreshAuth, fetchUserInfo, login } = useUserStore.getState();
+    const { isLoggedIn, fetchUserInfo } = useUserStore.getState();
 
     // 开发环境自动 mock 登录
     if (IS_DEV && !isLoggedIn) {
@@ -26,13 +34,12 @@ function App({ children }: PropsWithChildren<any>) {
       });
     }
 
-    if (isLoggedIn || IS_DEV) {
-      await Promise.all([
-        fetchUserInfo(),
-        useParcelStore.getState().fetchPendingCount(),
-        useNotificationStore.getState().fetchUnreadCount(),
-      ]);
-    }
+    // 拉取数据
+    await Promise.all([
+      fetchUserInfo(),
+      useParcelStore.getState().fetchPendingCount(),
+      useNotificationStore.getState().fetchUnreadCount(),
+    ]);
   });
 
   return children;
