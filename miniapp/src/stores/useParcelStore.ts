@@ -33,11 +33,15 @@ export const useParcelStore = create<ParcelState>((set, get) => ({
     try {
       const page = refresh ? 1 : state.currentPage;
       const result = await parcelApi.getMy({ page, page_size: PAGE_SIZE });
+      const newParcels = refresh ? result.list : [...state.myParcels, ...result.list];
+      // 计算待取件数（status=1 待取, status=3 滞留）
+      const pendingCount = newParcels.filter((p) => p.status === 1 || p.status === 3).length;
       set({
-        myParcels: refresh ? result.list : [...state.myParcels, ...result.list],
+        myParcels: newParcels,
         currentPage: page,
         hasMore: result.list.length >= PAGE_SIZE,
         loading: false,
+        pendingCount,
       });
     } catch {
       set({ loading: false });
@@ -45,12 +49,10 @@ export const useParcelStore = create<ParcelState>((set, get) => ({
   },
 
   fetchPendingCount: async () => {
-    try {
-      const result = await parcelApi.getPendingCount();
-      set({ pendingCount: result.count });
-    } catch {
-      // 静默失败
-    }
+    // 从已有包裹列表计算
+    const parcels = get().myParcels;
+    const count = parcels.filter((p) => p.status === 1 || p.status === 3).length;
+    set({ pendingCount: count });
   },
 
   getParcelDetail: async (id) => {

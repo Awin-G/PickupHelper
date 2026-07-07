@@ -53,3 +53,4 @@ miniapp/.stylelintcache
 
 # ----- Husky internal -----
 miniapp/.husky/_
+backend/bin/

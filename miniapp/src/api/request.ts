@@ -5,17 +5,31 @@ import type { ApiResponse } from './types';
 import { BusinessError } from './types';
 import { mockRoutes } from './mock';
 
-const BASE_URL_FALLBACK = 'http://localhost:8080/api/v1';
+const BASE_URL_FALLBACK = 'http://localhost:18080/api/v1';
 let BASE_URL = BASE_URL_FALLBACK;
 let USE_MOCK = true;
 
+// H5 模式下通过 URL 参数或 localStorage 控制 mock
+if (typeof window !== 'undefined') {
+  const urlParams = new URLSearchParams(window.location.search);
+  const mockParam = urlParams.get('mock');
+  if (mockParam === 'false') {
+    USE_MOCK = false;
+  }
+  // 检查 localStorage
+  const storedMock = localStorage.getItem('pickup_use_mock');
+  if (storedMock === 'false') {
+    USE_MOCK = false;
+  }
+}
+
 try {
-  if (typeof process !== 'undefined' && process.env) {
-    BASE_URL = process.env.TARO_APP_API_BASE || BASE_URL;
-    USE_MOCK = process.env.NODE_ENV === 'development';
+  if (typeof process !== 'undefined' && process.env && process.env.TARO_APP_API_BASE) {
+    BASE_URL = process.env.TARO_APP_API_BASE;
+    USE_MOCK = false;
   }
 } catch (e) {
-  // H5 环境默认使用 mock
+  // H5 环境
 }
 
 interface RequestConfig {
