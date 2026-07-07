@@ -151,6 +151,20 @@ func SeedRunnerApp(t *testing.T, db *sqlx.DB, userID int64, realName string, sta
 	}
 }
 
+// SeedShelf inserts a shelf_layout row for a station.
+func SeedShelf(t *testing.T, db *sqlx.DB, stationID int64, shelfCode string, maxCapacity int) int64 {
+	t.Helper()
+	res, err := db.Exec(
+		`INSERT INTO shelf_layout (station_id, shelf_code, row_num, col_num, current_capacity, max_capacity)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		stationID, shelfCode, 1, maxCapacity, 0, maxCapacity,
+	)
+	require.NoError(t, err, "seed shelf")
+	id, err := res.LastInsertId()
+	require.NoError(t, err)
+	return id
+}
+
 // TruncateAll clears all business tables (preserving goose_db_version)
 // for test isolation.
 func TruncateAll(t *testing.T, db *sqlx.DB) {
