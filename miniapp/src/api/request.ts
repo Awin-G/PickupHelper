@@ -3,33 +3,18 @@ import { storage } from '@/utils/storage';
 import { API_ERROR_CODE } from '@/utils/constants';
 import type { ApiResponse } from './types';
 import { BusinessError } from './types';
-import { mockRoutes } from './mock';
 
-const BASE_URL_FALLBACK = 'http://localhost:18080/api/v1';
+const BASE_URL_FALLBACK = 'https://pickup.awin-x.top/api/v1';
 let BASE_URL = BASE_URL_FALLBACK;
-let USE_MOCK = true;
+let USE_MOCK = false;
 
-// H5 模式下通过 URL 参数或 localStorage 控制 mock
-if (typeof window !== 'undefined') {
-  const urlParams = new URLSearchParams(window.location.search);
-  const mockParam = urlParams.get('mock');
-  if (mockParam === 'false') {
-    USE_MOCK = false;
-  }
-  // 检查 localStorage
-  const storedMock = localStorage.getItem('pickup_use_mock');
-  if (storedMock === 'false') {
-    USE_MOCK = false;
-  }
-}
-
+// 读取环境变量
 try {
   if (typeof process !== 'undefined' && process.env && process.env.TARO_APP_API_BASE) {
     BASE_URL = process.env.TARO_APP_API_BASE;
-    USE_MOCK = false;
   }
 } catch (e) {
-  // H5 环境
+  // 小程序环境
 }
 
 interface RequestConfig {
@@ -44,16 +29,6 @@ interface RequestConfig {
 }
 
 function matchMockRoute(config: RequestConfig): ((config: RequestConfig) => Promise<any>) | null {
-  const method = config.method || 'GET';
-  const key = `${method} ${config.url}`;
-  if (mockRoutes[key]) return mockRoutes[key];
-
-  for (const [pattern, handler] of Object.entries(mockRoutes)) {
-    const [pMethod, pPath] = pattern.split(' ');
-    if (pMethod !== method) continue;
-    const regex = new RegExp('^' + pPath.replace(/:(\w+)/g, '(?<$1>\\d+)') + '$');
-    if (regex.test(config.url)) return handler;
-  }
   return null;
 }
 
@@ -113,16 +88,6 @@ async function tryRefreshToken(): Promise<boolean> {
 }
 
 export async function request<T>(config: RequestConfig): Promise<T> {
-  if (USE_MOCK) {
-    const handler = matchMockRoute(config);
-    if (handler) {
-      await new Promise((r) => setTimeout(r, 200));
-      return handler(config) as T;
-    }
-    console.warn(`[Mock] No mock for: ${config.method || 'GET'} ${config.url}`);
-    return {} as T;
-  }
-
   const token = storage.get<string>('token');
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
