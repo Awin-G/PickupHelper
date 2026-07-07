@@ -22,8 +22,22 @@ export default function ParcelCard({
 }: ParcelCardProps) {
   const isPending = parcel.status === 1 || parcel.status === 3;
 
+  const handleTap = () => {
+    if (onTap) onTap(parcel);
+  };
+
+  const handlePickup = (e) => {
+    e.stopPropagation();
+    if (onPickup) onPickup(parcel);
+  };
+
+  const handleProxy = (e) => {
+    e.stopPropagation();
+    if (onProxy) onProxy(parcel);
+  };
+
   return (
-    <View className='parcel-card' onClick={() => onTap?.(parcel)}>
+    <View className='parcel-card' onClick={handleTap}>
       <View className='parcel-card__header'>
         <Text className='parcel-card__company'>{parcel.courier_company}</Text>
         <StatusBadge type='parcel' status={parcel.status} />
@@ -49,20 +63,14 @@ export default function ParcelCard({
           {showPickupCode && (
             <View
               className='parcel-card__btn parcel-card__btn--primary'
-              onClick={(e) => {
-                e.stopPropagation();
-                onPickup?.(parcel);
-              }}
+              onClick={handlePickup}
             >
               <Text>查看取件码</Text>
             </View>
           )}
           <View
             className='parcel-card__btn parcel-card__btn--default'
-            onClick={(e) => {
-              e.stopPropagation();
-              onProxy?.(parcel);
-            }}
+            onClick={handleProxy}
           >
             <Text>找人代取</Text>
           </View>
