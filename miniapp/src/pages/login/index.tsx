@@ -89,12 +89,13 @@ export default function LoginPage() {
       Taro.showToast({ title: '登录成功', icon: 'success' });
       setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
     } catch (err: any) {
+      const errMsg = err.message || err.msg || '未知错误';
+      console.error('微信登录失败:', err);
       // 新用户需要手机号授权
-      if (err.msg && err.msg.includes('phone_code')) {
-        // 提示用户点击手机号授权按钮
-        Taro.showToast({ title: '请点击下方按钮授权手机号', icon: 'none' });
+      if (errMsg.includes('phone_code') || errMsg.includes('首次登录')) {
+        Taro.showToast({ title: '请点击下方按钮授权手机号', icon: 'none', duration: 3000 });
       } else {
-        Taro.showToast({ title: '微信登录失败', icon: 'none' });
+        Taro.showToast({ title: `登录失败: ${errMsg}`, icon: 'none', duration: 3000 });
       }
     } finally {
       setWxLoading(false);

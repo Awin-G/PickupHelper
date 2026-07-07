@@ -55,17 +55,30 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   wechatLogin: async (phoneCode?: string) => {
     // 调用 wx.login 获取 code
-    const loginRes = await Taro.login();
+    let loginRes;
+    try {
+      loginRes = await Taro.login();
+    } catch (e) {
+      console.error('wx.login 失败:', e);
+      throw new Error('微信登录接口调用失败');
+    }
+
     if (!loginRes.code) {
-      throw new Error('微信登录失败');
+      throw new Error('获取微信登录凭证失败');
     }
 
     const nickname = generateNickname();
-    const result = await authApi.wechatLogin({
-      code: loginRes.code,
-      phone_code: phoneCode,
-      nickname,
-    });
+    let result;
+    try {
+      result = await authApi.wechatLogin({
+        code: loginRes.code,
+        phone_code: phoneCode,
+        nickname,
+      });
+    } catch (e: any) {
+      console.error('wechatLogin API 失败:', e);
+      throw e;
+    }
 
     storage.set('token', result.access_token);
     storage.set('refresh_token', result.refresh_token);
