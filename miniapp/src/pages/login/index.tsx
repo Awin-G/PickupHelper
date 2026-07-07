@@ -76,51 +76,39 @@ export default function LoginPage() {
     }
   };
 
-  // 微信一键登录（已绑定用户）
-  const handleWxLogin = async () => {
-    if (!agreed) {
-      Taro.showToast({ title: '请同意用户协议', icon: 'none' });
-      return;
-    }
-
-    setWxLoading(true);
-    try {
-      await wechatLogin();
-      Taro.showToast({ title: '登录成功', icon: 'success' });
-      setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
-    } catch (err: any) {
-      const errMsg = err.message || err.msg || '未知错误';
-      console.error('微信登录失败:', err);
-      // 新用户需要手机号授权
-      if (errMsg.includes('phone_code') || errMsg.includes('首次登录')) {
-        Taro.showToast({ title: '请点击下方按钮授权手机号', icon: 'none', duration: 3000 });
-      } else {
-        Taro.showToast({ title: `登录失败: ${errMsg}`, icon: 'none', duration: 3000 });
-      }
-    } finally {
-      setWxLoading(false);
-    }
-  };
-
-  // 手机号授权回调（新用户）
+  // 微信手机号授权回调（新用户）
   const handleGetPhoneNumber = async (e: any) => {
+    console.log('getPhoneNumber 回调:', e.detail);
+
     if (!agreed) {
       Taro.showToast({ title: '请同意用户协议', icon: 'none' });
       return;
     }
 
+    // 检查是否授权成功
     if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+      console.log('授权失败:', e.detail.errMsg);
       Taro.showToast({ title: '手机号授权取消', icon: 'none' });
       return;
     }
 
+    // 获取到 phone_code，调用微信登录
+    const phoneCode = e.detail.code;
+    console.log('获取到 phone_code:', phoneCode);
+
+    if (!phoneCode) {
+      Taro.showToast({ title: '获取手机号失败', icon: 'none' });
+      return;
+    }
+
     setWxLoading(true);
     try {
-      await wechatLogin(e.detail.code);
+      await wechatLogin(phoneCode);
       Taro.showToast({ title: '登录成功', icon: 'success' });
       setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
-    } catch {
-      Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
+    } catch (err: any) {
+      console.error('微信登录失败:', err);
+      Taro.showToast({ title: `登录失败: ${err.message || '未知错误'}`, icon: 'none', duration: 3000 });
     } finally {
       setWxLoading(false);
     }
@@ -134,19 +122,14 @@ export default function LoginPage() {
       </View>
 
       <View className='login-page__form'>
-        {/* 微信一键登录 */}
-        <View className='login-page__wx-login' onClick={handleWxLogin}>
-          <Text className='login-page__wx-icon'>📱</Text>
-          <Text className='login-page__wx-text'>{wxLoading ? '登录中...' : '微信一键登录'}</Text>
-        </View>
-
-        {/* 新用户手机号授权按钮 */}
+        {/* 微信手机号授权登录（推荐） */}
         <TaroButton
           className='login-page__wx-phone-btn'
           open-type='getPhoneNumber'
           onGetPhoneNumber={handleGetPhoneNumber}
         >
-          <Text>微信手机号快捷登录</Text>
+          <Text className='login-page__wx-icon'>📱</Text>
+          <Text className='login-page__wx-text'>{wxLoading ? '登录中...' : '微信手机号快捷登录'}</Text>
         </TaroButton>
 
         <View className='login-page__divider'>
