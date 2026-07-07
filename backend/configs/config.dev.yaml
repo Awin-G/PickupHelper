@@ -39,3 +39,7 @@ cors:
   allowed_origins:
     - "http://localhost:5173"
     - "http://localhost:3000"
+
+wechat:
+  app_id: "wx6292c3921041336f"
+  app_secret: "6dda4b7c2ad196e5ed50a6f0ccff590c"

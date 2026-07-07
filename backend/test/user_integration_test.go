@@ -51,7 +51,7 @@ func setupUserEngine(t *testing.T) *userTestEnv {
 	userSvc := service.NewUserService(userRepo, runnerRepo, env.DB)
 
 	healthH := handler.NewHealthHandler(env.DB, env.Rdb)
-	authH := handler.NewAuthHandler(authSvc)
+	authH := handler.NewAuthHandler(authSvc, nil)
 	userH := handler.NewUserHandler(userSvc)
 	router.Register(engine, env.Cfg, &router.Handlers{
 		Health: healthH,

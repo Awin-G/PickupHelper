@@ -18,6 +18,7 @@ type Config struct {
 	Log       LogConfig       `mapstructure:"log"`
 	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
 	CORS      CORSConfig      `mapstructure:"cors"`
+	Wechat    WechatConfig    `mapstructure:"wechat"`
 }
 
 type ServerConfig struct {
@@ -65,6 +66,11 @@ type RateLimitConfig struct {
 
 type CORSConfig struct {
 	AllowedOrigins []string `mapstructure:"allowed_origins"`
+}
+
+type WechatConfig struct {
+	AppID     string `mapstructure:"app_id"`
+	AppSecret string `mapstructure:"app_secret"`
 }
 
 // Load reads configs/config.<env>.yaml where env comes from APP_ENV (default "dev").

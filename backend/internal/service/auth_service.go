@@ -261,3 +261,101 @@ func firstNonEmpty(s, fallback string) string {
 	}
 	return fallback
 }
+
+// LoginByOpenID looks up a user by openid and returns JWT tokens.
+func (s *AuthService) LoginByOpenID(ctx context.Context, openid string) (*LoginResult, error) {
+	u, err := s.userRepo.FindByOpenID(ctx, s.db, openid)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, apperrors.New(apperrors.ErrUserNotFound, "")
+	}
+	if err != nil {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	if u.IsBlacklistedBool() {
+		return nil, apperrors.New(apperrors.ErrUserBlacklisted, "")
+	}
+	claims := middleware.Claims{
+		UserID:   u.ID,
+		UserType: int(u.UserType),
+		Role:     "user",
+	}
+	access, err := middleware.SignAccess(s.cfg, claims)
+	if err != nil {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	refresh, err := middleware.SignRefresh(s.cfg, claims)
+	if err != nil {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	return &LoginResult{
+		AccessToken:  access,
+		RefreshToken: refresh,
+		ExpiresIn:    int(s.cfg.JWT.AccessTTL.Seconds()),
+		Role:         "user",
+		User:         u.ToDTO(),
+	}, nil
+}
+
+// RegisterByWechat creates a new user from WeChat login data.
+func (s *AuthService) RegisterByWechat(ctx context.Context, openid, phone, nickname, avatarURL string) (*LoginResult, error) {
+	if openid == "" || phone == "" {
+		return nil, apperrors.New(apperrors.ErrInvalidParam, "openid 和 phone 必填")
+	}
+	if !models.IsValidPhone(phone) {
+		return nil, apperrors.New(apperrors.ErrPhoneFormat, "")
+	}
+
+	// Check if phone already exists → bind openid to existing user.
+	u, err := s.userRepo.FindByPhone(ctx, s.db, phone)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	if u != nil {
+		if u.IsBlacklistedBool() {
+			return nil, apperrors.New(apperrors.ErrUserBlacklisted, "")
+		}
+		if !u.OpenID.Valid {
+			if e := s.userRepo.UpdateOpenID(ctx, s.db, u.ID, openid); e != nil {
+				return nil, apperrors.Wrap(e, apperrors.ErrInternal, "")
+			}
+			u.OpenID = sql.NullString{String: openid, Valid: true}
+		}
+		if nickname != "" && u.Nickname == "" {
+			_ = s.userRepo.UpdateProfile(ctx, s.db, u.ID, nickname, avatarURL)
+			u.Nickname = nickname
+		}
+		return s.signLoginUser(u), nil
+	}
+
+	// Create new user.
+	id, err := s.userRepo.Create(ctx, s.db, phone, openid)
+	if err != nil {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	if nickname != "" {
+		_ = s.userRepo.UpdateProfile(ctx, s.db, id, nickname, avatarURL)
+	}
+
+	u2, err := s.userRepo.FindByID(ctx, s.db, id)
+	if err != nil {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	return s.signLoginUser(u2), nil
+}
+
+func (s *AuthService) signLoginUser(u *models.User) *LoginResult {
+	claims := middleware.Claims{
+		UserID:   u.ID,
+		UserType: int(u.UserType),
+		Role:     "user",
+	}
+	access, _ := middleware.SignAccess(s.cfg, claims)
+	refresh, _ := middleware.SignRefresh(s.cfg, claims)
+	return &LoginResult{
+		AccessToken:  access,
+		RefreshToken: refresh,
+		ExpiresIn:    int(s.cfg.JWT.AccessTTL.Seconds()),
+		Role:         "user",
+		User:         u.ToDTO(),
+	}
+}
