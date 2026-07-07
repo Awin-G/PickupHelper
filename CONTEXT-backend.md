@@ -114,8 +114,11 @@ docker run -d --name pickup-redis -p 6379:6379 redis:7-alpine
 # 数据库迁移
 make migrate-up
 
-# 启动服务（:8080）
+# 启动服务（默认 :8080，但开发测试时用 APP_PORT 覆盖，避免与前端冲突）
 make run
+
+# 开发/测试时指定非默认端口（推荐 18080），避免前端 agent 也占用 8080
+APP_PORT=18080 make run
 
 # 单元测试（不带集成测试）
 make test-unit
@@ -129,6 +132,16 @@ make vet-integration
 ```
 
 **验证一个 Phase 完成的标准**：`go build ./...` + `go vet ./...` + `go vet -tags=integration ./...` + `make test-unit` + `make test-integration` 全部 PASS，且 `make run` 冒烟测试核心接口可用。
+
+### 端口约定（重要）
+
+- **默认端口 `8080` 仅供生产/前端 agent 使用**，后端开发和测试绝不占用。
+- 后端开发/测试时通过环境变量 `APP_PORT` 覆盖，推荐 `18080`：
+  ```bash
+  APP_PORT=18080 make run
+  ```
+- 集成测试使用 testcontainers（动态端口），不占用宿主机固定端口。
+- 该约定写入本文件，后端 agent 每次启动服务前必须检查。
 
 ---
 

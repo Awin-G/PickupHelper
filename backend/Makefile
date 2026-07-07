@@ -1,12 +1,13 @@
 .PHONY: run build test test-unit test-integration migrate-up migrate-down migrate-reset tidy vet fmt lint
 
 APP_ENV ?= dev
+APP_PORT ?= 8080
 BIN := bin/server
 MYSQL_DSN := "root:1973@tcp(127.0.0.1:3306)/pickup_helper?parseTime=true&loc=Asia%2FShanghai&charset=utf8mb4"
 MYSQL_DB := pickup_helper
 
 run:
-	APP_ENV=$(APP_ENV) go run ./cmd/server
+	APP_ENV=$(APP_ENV) SERVER__PORT=$(APP_PORT) go run ./cmd/server
 
 build:
 	go build -o $(BIN) ./cmd/server
