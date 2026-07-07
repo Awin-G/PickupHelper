@@ -66,8 +66,8 @@ PickupHelper/                      # 仓库根目录（前后端共用）
 |-------|------|------|------|
 | 1 | Foundation（骨架/配置/日志/迁移/中间件/JWT/测试基建） | ✅ Complete | b818979 |
 | 2 | User Module（认证/用户/跑腿员审核/黑名单） | ✅ Complete | df20722 |
-| 3 | Parcel Module（包裹入库/查询/批量导入） | ⏳ 下一个 | — |
-| 4 | Pickup Module（取件核销/出库） | ⏳ 待开始 | — |
+| 3 | Parcel Module（包裹入库/查询/批量导入） | ✅ Complete | (待提交) |
+| 4 | Pickup Module（取件核销/出库） | ⏳ 下一个 | — |
 | 5 | Proxy Module（代取增值服务） | ⏳ 待开始 | — |
 | 6 | Shelf Module（货架布局/容量） | ⏳ 待开始 | — |
 | 7 | Notification Module（通知/异步管道） | ⏳ 待开始 | — |
@@ -85,7 +85,17 @@ PickupHelper/                      # 仓库根目录（前后端共用）
 - `PUT /api/v1/admin/user/runner/applications/:id/audit` — 审核跑腿员申请（事务：applications + users 一致性）
 - `PUT /api/v1/admin/users/:id/blacklist` — 黑名单管理（AdminOnly 中间件保护）
 
-### Phase 3（下一个）目标
+### Phase 3 已交付能力
+
+- `POST /api/v1/parcels/scan-in` — 包裹入库（扫码/手动），6位取件码生成（密码学随机）、货架自动分配、乐观锁容量管理
+- `GET /api/v1/parcels` — 管理员包裹列表（按驿站筛选、多条件过滤、分页）
+- `GET /api/v1/parcels/:id` — 包裹详情（管理员/本人权限隔离）
+- `PUT /api/v1/parcels/:id/status` — 包裹状态变更（滞留/退件/异常，状态机校验）
+- `GET /api/v1/parcels/my` — 我的包裹列表（仅收件人关联包裹）
+- `GET /api/v1/parcels/:id/pickup-code` — 获取取件码（仅本人、仅待取状态）
+- `repository.ShelfRepo` — 货架分配基础接口（Phase 6 的货架模块前置）
+
+### Phase 4（下一个）目标
 
 包裹入库与查询：扫码/手动入库、6 位取件码生成（驿站内唯一）、货架分配、批量 Excel 导入（异步）、管理员/收件人视角列表权限隔离。参考 `详细设计文档/api详细设计.md` 与 `详细设计文档/数据库设计文档.md` 的 parcels 表。
 
@@ -229,4 +239,4 @@ Recovery → TraceID → Logger → CORS → RateLimit → JWT → AdminOnly →
 
 ---
 
-*最后更新：2026-07-07（Phase 2 完成 + 后端代码迁入 backend/ 子目录）*
+*最后更新：2026-07-07（Phase 3 完成）*
