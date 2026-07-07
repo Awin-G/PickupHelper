@@ -1,32 +1,56 @@
 import { View, Text } from '@tarojs/components';
-import Taro, { useLoad, useRouter } from '@tarojs/taro';
+import Taro, { useRouter } from '@tarojs/taro';
 import { useState, useEffect } from 'react';
 import { useParcelStore } from '@/stores/useParcelStore';
-import type { PickupCodeInfo } from '@/api/types';
+import type { Parcel } from '@/api/types';
 import './index.scss';
 
 export default function PickupCodePage() {
   const router = useRouter();
-  const { getPickupCode } = useParcelStore();
-  const [codeInfo, setCodeInfo] = useState<PickupCodeInfo | null>(null);
+  const { getParcelDetail } = useParcelStore();
+  const [parcel, setParcel] = useState<Parcel | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const id = router.params.id;
     if (id) {
-      getPickupCode(Number(id)).then(setCodeInfo);
+      getParcelDetail(Number(id))
+        .then((p) => {
+          if (p.pickup_code) {
+            setParcel(p);
+          } else {
+            setError('无法获取取件码');
+          }
+        })
+        .catch(() => setError('加载失败'));
     }
-    // 页面保持常亮
     Taro.setKeepScreenOn({ keepScreenOn: true });
     return () => {
       Taro.setKeepScreenOn({ keepScreenOn: false });
     };
   }, [router.params.id]);
 
-  if (!codeInfo) {
-    return <View className='pickup-code'><Text>加载中...</Text></View>;
+  if (error) {
+    return (
+      <View className='pickup-code'>
+        <View className='pickup-code__error'>
+          <Text>{error}</Text>
+        </View>
+      </View>
+    );
   }
 
-  const digits = codeInfo.pickup_code.split('');
+  if (!parcel || !parcel.pickup_code) {
+    return (
+      <View className='pickup-code'>
+        <View className='pickup-code__loading'>
+          <Text>加载中...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const digits = parcel.pickup_code.split('');
 
   return (
     <View className='pickup-code'>
@@ -50,8 +74,12 @@ export default function PickupCodePage() {
 
       <View className='pickup-code__info'>
         <View className='pickup-code__info-row'>
-          <Text className='pickup-code__info-label'>有效期至</Text>
-          <Text className='pickup-code__info-value'>{codeInfo.expire_at.split('T')[0]}</Text>
+          <Text className='pickup-code__info-label'>快递公司</Text>
+          <Text className='pickup-code__info-value'>{parcel.courier_company}</Text>
+        </View>
+        <View className='pickup-code__info-row'>
+          <Text className='pickup-code__info-label'>货架编号</Text>
+          <Text className='pickup-code__info-value'>{parcel.shelf_code}</Text>
         </View>
       </View>
 
