@@ -27,7 +27,6 @@ export default function SelfCheckoutPage() {
 
     setLoading(true);
     try {
-      // Mock 提交
       await new Promise((r) => setTimeout(r, 1000));
       Taro.showToast({ title: '出库成功', icon: 'success' });
       setTimeout(() => Taro.navigateBack(), 1500);
@@ -43,7 +42,6 @@ export default function SelfCheckoutPage() {
       <View className='self-checkout__card'>
         <Text className='self-checkout__title'>自助出库</Text>
         <Text className='self-checkout__desc'>扫描驿站二维码或输入取件码完成出库</Text>
-
         <View className='self-checkout__input-group'>
           <Input
             className='self-checkout__input'
@@ -53,29 +51,16 @@ export default function SelfCheckoutPage() {
             onInput={(e) => setPickupCode(e.detail.value)}
           />
         </View>
-
         <View className='self-checkout__divider'>
-          <Text className='self-checkout__divider-text">或</Text>
+          <Text className='self-checkout__divider-text'>或</Text>
         </View>
-
-        <Button
-          block
-          className='self-checkout__scan-btn'
-          onClick={handleScan}
-        >
-          扫描驿站二维码
-        </Button>
+        <View className='self-checkout__scan-btn' onClick={handleScan}>
+          <Text>扫描驿站二维码</Text>
+        </View>
       </View>
-
-      <Button
-        type='primary'
-        block
-        loading={loading}
-        className='self-checkout__submit'
-        onClick={handleSubmit}
-      >
-        确认出库
-      </Button>
+      <View className='self-checkout__submit' onClick={handleSubmit}>
+        <Text>确认出库</Text>
+      </View>
     </View>
   );
 }
