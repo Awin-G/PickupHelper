@@ -63,18 +63,22 @@ export const useUserStore = create<UserState>((set, get) => ({
       throw new Error('微信登录接口调用失败');
     }
 
+    console.log('wx.login 返回:', loginRes);
     if (!loginRes.code) {
       throw new Error('获取微信登录凭证失败');
     }
 
     const nickname = generateNickname();
+    const requestData = {
+      code: loginRes.code,
+      phone_code: phoneCode,
+      nickname,
+    };
+    console.log('发送到后端的数据:', requestData);
+
     let result;
     try {
-      result = await authApi.wechatLogin({
-        code: loginRes.code,
-        phone_code: phoneCode,
-        nickname,
-      });
+      result = await authApi.wechatLogin(requestData);
     } catch (e: any) {
       console.error('wechatLogin API 失败:', e);
       throw e;
