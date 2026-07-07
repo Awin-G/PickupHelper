@@ -29,15 +29,17 @@ export default function MinePage() {
   };
 
   const getAvatarUrl = () => {
-    if (userInfo?.avatar) {
+    if (userInfo && userInfo.avatar) {
       if (userInfo.avatar.startsWith('/')) {
-        const base = process.env.TARO_APP_API_BASE || 'http://localhost:18080/api/v1';
-        return base.replace('/api/v1', '') + userInfo.avatar;
+        const base = 'https://pickup.awin-x.top';
+        return base + userInfo.avatar;
       }
       return userInfo.avatar;
     }
     return '';
   };
+
+  const hasAvatar = userInfo && userInfo.avatar;
 
   const menuItems = [
     { icon: '📦', title: '我的代取订单', path: '/subpkg-proxy/pages/proxy-orders/index' },
@@ -53,7 +55,7 @@ export default function MinePage() {
         onClick={() => Taro.navigateTo({ url: '/subpkg-user/pages/profile-edit/index' })}
       >
         <View className='mine-page__avatar'>
-          {userInfo?.avatar ? (
+          {hasAvatar ? (
             <Image className='mine-page__avatar-img' src={getAvatarUrl()} mode='aspectFill' />
           ) : (
             <Text className='mine-page__avatar-text'>

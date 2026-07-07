@@ -3,12 +3,11 @@ import Taro from '@tarojs/taro';
 import { useState } from 'react';
 import { useUserStore } from '@/stores/useUserStore';
 import { authApi } from '@/api/auth';
-import { storage } from '@/utils/storage';
 import './index.scss';
 
 export default function ProfileEditPage() {
   const { userInfo, updateProfile } = useUserStore();
-  const [nickname, setNickname] = useState(userInfo?.nickname || '');
+  const [nickname, setNickname] = useState(userInfo ? userInfo.nickname : '');
   const [saving, setSaving] = useState(false);
 
   const handleChooseAvatar = async () => {
@@ -53,26 +52,26 @@ export default function ProfileEditPage() {
   };
 
   const getAvatarUrl = () => {
-    if (userInfo?.avatar) {
-      // 如果是相对路径，加上 API 前缀
+    if (userInfo && userInfo.avatar) {
       if (userInfo.avatar.startsWith('/')) {
-        const base = process.env.TARO_APP_API_BASE || 'http://localhost:18080/api/v1';
-        return base.replace('/api/v1', '') + userInfo.avatar;
+        return 'https://pickup.awin-x.top' + userInfo.avatar;
       }
       return userInfo.avatar;
     }
     return '';
   };
 
+  const hasAvatar = userInfo && userInfo.avatar;
+
   return (
     <View className='profile-edit'>
       <View className='profile-edit__avatar-section' onClick={handleChooseAvatar}>
         <View className='profile-edit__avatar'>
-          {userInfo?.avatar ? (
+          {hasAvatar ? (
             <Image className='profile-edit__avatar-img' src={getAvatarUrl()} mode='aspectFill' />
           ) : (
             <Text className='profile-edit__avatar-text'>
-              {userInfo?.nickname ? userInfo.nickname.charAt(0) : '?'}
+              {userInfo ? userInfo.nickname.charAt(0) : '?'}
             </Text>
           )}
         </View>
@@ -93,12 +92,12 @@ export default function ProfileEditPage() {
 
         <View className='profile-edit__field'>
           <Text className='profile-edit__label'>手机号</Text>
-          <Text className='profile-edit__value'>{userInfo?.phone || ''}</Text>
+          <Text className='profile-edit__value'>{userInfo ? userInfo.phone : ''}</Text>
         </View>
 
         <View className='profile-edit__field'>
           <Text className='profile-edit__label'>信用分</Text>
-          <Text className='profile-edit__value'>{userInfo?.credit_score || 0}</Text>
+          <Text className='profile-edit__value'>{userInfo ? userInfo.credit_score : 0}</Text>
         </View>
       </View>
 
