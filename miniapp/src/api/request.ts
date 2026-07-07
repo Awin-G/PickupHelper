@@ -3,8 +3,12 @@ import { storage } from '@/utils/storage';
 import { API_ERROR_CODE } from '@/utils/constants';
 import type { ApiResponse } from './types';
 import { BusinessError } from './types';
+import * as mock from './mock';
 
 const BASE_URL = process.env.TARO_APP_API_BASE || 'http://localhost:8080/api/v1';
+
+// 是否使用 mock 数据（开发环境默认开启）
+const USE_MOCK = process.env.NODE_ENV === 'development';
 
 interface RequestConfig {
   url: string;
@@ -15,6 +19,67 @@ interface RequestConfig {
   showLoading?: boolean;
   withGeo?: boolean;
   retry?: boolean;
+}
+
+/** Mock 路由表 */
+const mockRoutes: Record<string, (config: RequestConfig) => Promise<any>> = {
+  'POST /auth/send-code': async () => undefined,
+  'POST /auth/login': async () => ({
+    token: 'mock_token_xxx',
+    refresh_token: 'mock_refresh_xxx',
+    user: mock.mockUser,
+  }),
+  'POST /auth/refresh': async () => ({
+    token: 'mock_token_refreshed',
+    refresh_token: 'mock_refresh_refreshed',
+  }),
+  'GET /user/info': async () => mock.mockUser,
+  'PUT /user/profile': async () => undefined,
+  'GET /parcels/my': async (config) =>
+    mock.paginate(mock.mockParcels, config.params?.page || 1, config.params?.page_size || 20),
+  'GET /parcels/pending-count': async () => ({
+    count: mock.mockParcels.filter((p) => p.status === 1 || p.status === 3).length,
+  }),
+  'GET /parcels/:id': async (config) => {
+    const id = Number(config.url.match(/\/parcels\/(\d+)/)?.[1]);
+    return mock.mockParcels.find((p) => p.id === id) || mock.mockParcels[0];
+  },
+  'GET /parcels/:id/pickup-code': async () => mock.mockPickupCode,
+  'GET /proxy/tasks': async (config) =>
+    mock.paginate(mock.mockTasks, config.params?.page || 1, config.params?.page_size || 20),
+  'POST /proxy/publish': async () => ({ id: 99 }),
+  'POST /proxy/accept/:id': async () => mock.mockOrders[0],
+  'GET /proxy/orders/:id': async () => mock.mockOrders[0],
+  'GET /proxy/orders/my': async (config) =>
+    mock.paginate(mock.mockOrders, config.params?.page || 1, config.params?.page_size || 20),
+  'POST /proxy/orders/:id/confirm': async () => undefined,
+  'POST /proxy/orders/:id/cancel': async () => undefined,
+  'GET /notifications': async (config) =>
+    mock.paginate(mock.mockNotifications, config.params?.page || 1, config.params?.page_size || 20),
+  'GET /notifications/unread-count': async () => ({
+    count: mock.mockNotifications.filter((n) => !n.is_read).length,
+  }),
+  'POST /notifications/:id/read': async () => undefined,
+  'POST /notifications/read-all': async () => undefined,
+};
+
+function matchMockRoute(config: RequestConfig): ((config: RequestConfig) => Promise<any>) | null {
+  const method = config.method || 'GET';
+  const key = `${method} ${config.url}`;
+
+  // 精确匹配
+  if (mockRoutes[key]) return mockRoutes[key];
+
+  // 模式匹配 (含 :id)
+  for (const [pattern, handler] of Object.entries(mockRoutes)) {
+    const [pMethod, pPath] = pattern.split(' ');
+    if (pMethod !== method) continue;
+
+    const regex = new RegExp('^' + pPath.replace(/:(\w+)/g, '(?<$1>\\d+)') + '$');
+    if (regex.test(config.url)) return handler;
+  }
+
+  return null;
 }
 
 function getAppVersion(): string {
@@ -74,6 +139,18 @@ async function tryRefreshToken(): Promise<boolean> {
 }
 
 export async function request<T>(config: RequestConfig): Promise<T> {
+  // Mock 模式
+  if (USE_MOCK) {
+    const handler = matchMockRoute(config);
+    if (handler) {
+      await mock.delay(200);
+      return handler(config) as T;
+    }
+    console.warn(`[Mock] No mock for: ${config.method || 'GET'} ${config.url}`);
+    return {} as T;
+  }
+
+  // 真实请求
   const token = storage.get<string>('token');
 
   const headers: Record<string, string> = {
@@ -93,7 +170,7 @@ export async function request<T>(config: RequestConfig): Promise<T> {
       headers['X-Geo-Lat'] = String(loc.latitude);
       headers['X-Geo-Lng'] = String(loc.longitude);
     } catch {
-      // 用户拒绝授权，后端会做风控
+      // 用户拒绝授权
     }
   }
 
