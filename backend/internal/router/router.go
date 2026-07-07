@@ -22,6 +22,7 @@ type Handlers struct {
 	Pickup *handler.PickupHandler
 	Proxy  *handler.ProxyHandler
 	Shelf  *handler.ShelfHandler
+	Notify *handler.NotifyHandler
 }
 
 // Register wires the global middleware chain and application routes onto
@@ -108,6 +109,10 @@ func Register(engine *gin.Engine, cfg *config.Config, h *Handlers) {
 		shelfGroup := jwtGroup.Group("/shelves")
 		shelfGroup.Use(middleware.AdminOnly())
 		h.Shelf.RegisterShelfRoutes(shelfGroup)
+	}
+
+	if h.Notify != nil {
+		h.Notify.RegisterNotifyRoutes(jwtGroup.Group("/notifications"))
 	}
 
 	// NoRoute: enforce JWT for unmatched /api/v1/* paths.

@@ -110,6 +110,9 @@ const (
 	ErrShelfNotFound      = 10511 // 货架不存在
 	ErrShelfMaxBelowCurrent= 10512 // max_capacity 小于当前占用
 	ErrShelfCodeUsed      = 10513 // 货架编号已被占用
+
+	// Notification module error codes (10601~10699).
+	ErrNotifyNotFound = 10601 // 通知不存在
 )
 
 // HTTPStatus maps a business code to its HTTP status code.
@@ -184,6 +187,8 @@ func HTTPStatus(code int) int {
 	case ErrShelfCapacityInvalid:
 		return http.StatusBadRequest
 	case ErrShelfNotFound:
+		return http.StatusNotFound
+	case ErrNotifyNotFound:
 		return http.StatusNotFound
 	default:
 		// Module-specific codes default to 500 unless they fall in a
@@ -351,6 +356,8 @@ func Msg(code int) string {
 		return "最大容量小于当前占用"
 	case ErrShelfCodeUsed:
 		return "货架编号已被占用"
+	case ErrNotifyNotFound:
+		return "通知不存在"
 	default:
 		return "未知错误"
 	}

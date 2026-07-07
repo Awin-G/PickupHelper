@@ -31,23 +31,26 @@ type Container struct {
 	shelfRepo  repository.ShelfRepo
 	pickupRepo repository.PickupLogRepo
 	proxyRepo  repository.ProxyOrderRepo
+	notifyRepo repository.NotifyRepo
 
 	// Services.
-	authSvc   *service.AuthService
-	userSvc   *service.UserService
-	parcelSvc *service.ParcelService
-	pickupSvc *service.PickupService
-	proxySvc  *service.ProxyService
-	shelfSvc  *service.ShelfService
+	authSvc    *service.AuthService
+	userSvc    *service.UserService
+	parcelSvc  *service.ParcelService
+	pickupSvc  *service.PickupService
+	proxySvc   *service.ProxyService
+	shelfSvc   *service.ShelfService
+	notifySvc  *service.NotifyService
 
 	// Handlers.
-	healthH *handler.HealthHandler
-	authH   *handler.AuthHandler
-	userH   *handler.UserHandler
-	parcelH *handler.ParcelHandler
-	pickupH *handler.PickupHandler
-	proxyH  *handler.ProxyHandler
-	shelfH  *handler.ShelfHandler
+	healthH  *handler.HealthHandler
+	authH    *handler.AuthHandler
+	userH    *handler.UserHandler
+	parcelH  *handler.ParcelHandler
+	pickupH  *handler.PickupHandler
+	proxyH   *handler.ProxyHandler
+	shelfH   *handler.ShelfHandler
+	notifyH  *handler.NotifyHandler
 }
 
 // BuildContainer manually wires dependencies (no DI framework).
@@ -72,6 +75,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	shelfRepo := repository.NewShelfRepo()
 	pickupRepo := repository.NewPickupLogRepo()
 	proxyRepo := repository.NewProxyOrderRepo()
+	notifyRepo := repository.NewNotifyRepo()
 
 	// Services.
 	env := os.Getenv("APP_ENV")
@@ -85,6 +89,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	pickupSvc := service.NewPickupService(parcelRepo, pickupRepo, shelfRepo, userRepo, db)
 	proxySvc := service.NewProxyService(proxyRepo, parcelRepo, userRepo, db)
 	shelfSvc := service.NewShelfService(shelfRepo, db)
+	notifySvc := service.NewNotifyService(notifyRepo, db)
 
 	// Handlers.
 	healthH := handler.NewHealthHandler(db, rdb)
@@ -94,6 +99,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	pickupH := handler.NewPickupHandler(pickupSvc)
 	proxyH := handler.NewProxyHandler(proxySvc)
 	shelfH := handler.NewShelfHandler(shelfSvc)
+	notifyH := handler.NewNotifyHandler(notifySvc)
 
 	return &Container{
 		Cfg:        cfg,
@@ -106,20 +112,23 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 		parcelRepo: parcelRepo,
 		shelfRepo:  shelfRepo,
 		pickupRepo: pickupRepo,
-		proxyRepo:  proxyRepo,
-		authSvc:    authSvc,
-		userSvc:    userSvc,
-		parcelSvc:  parcelSvc,
-		pickupSvc:  pickupSvc,
-		proxySvc:   proxySvc,
-		shelfSvc:   shelfSvc,
-		healthH:    healthH,
-		authH:      authH,
-		userH:      userH,
-		parcelH:    parcelH,
-		pickupH:    pickupH,
-		proxyH:     proxyH,
-		shelfH:     shelfH,
+		proxyRepo:   proxyRepo,
+		notifyRepo:  notifyRepo,
+		authSvc:     authSvc,
+		userSvc:     userSvc,
+		parcelSvc:   parcelSvc,
+		pickupSvc:   pickupSvc,
+		proxySvc:    proxySvc,
+		shelfSvc:    shelfSvc,
+		notifySvc:   notifySvc,
+		healthH:     healthH,
+		authH:       authH,
+		userH:       userH,
+		parcelH:     parcelH,
+		pickupH:     pickupH,
+		proxyH:      proxyH,
+		shelfH:      shelfH,
+		notifyH:     notifyH,
 	}, nil
 }
 
@@ -133,6 +142,7 @@ func (c *Container) Handlers() *router.Handlers {
 		Pickup: c.pickupH,
 		Proxy:  c.proxyH,
 		Shelf:  c.shelfH,
+		Notify: c.notifyH,
 	}
 }
 
