@@ -1,4 +1,145 @@
+@import '../../styles/variables';
+
 .mine-page {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: $color-bg-page;
+  padding-bottom: 120px;
+
+  &__header {
+    background: linear-gradient(135deg, $color-primary, #40a9ff);
+    padding: 60px 32px 40px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  &__avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__avatar-text {
+    font-size: 48px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  &__info {
+    flex: 1;
+  }
+
+  &__name {
+    display: block;
+    font-size: 36px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  &__phone {
+    display: block;
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 12px;
+  }
+
+  &__credit {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 16px;
+    border-radius: 999px;
+  }
+
+  &__credit-label {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  &__credit-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  &__switch {
+    background: #fff;
+    margin: 24px;
+    border-radius: 16px;
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__switch-icon {
+    font-size: 36px;
+    margin-right: 16px;
+  }
+
+  &__switch-text {
+    flex: 1;
+    font-size: 28px;
+    color: $color-text-primary;
+  }
+
+  &__switch-arrow {
+    font-size: 32px;
+    color: $color-text-placeholder;
+  }
+
+  &__menu {
+    background: #fff;
+    margin: 24px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__menu-item {
+    display: flex;
+    align-items: center;
+    padding: 28px 32px;
+    border-bottom: 1px solid $color-border;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__menu-icon {
+    font-size: 36px;
+    margin-right: 20px;
+  }
+
+  &__menu-text {
+    flex: 1;
+    font-size: 28px;
+    color: $color-text-primary;
+  }
+
+  &__menu-arrow {
+    font-size: 32px;
+    color: $color-text-placeholder;
+  }
+
+  &__logout {
+    margin: 48px 24px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+    Text {
+      font-size: 28px;
+      color: $color-danger;
+    }
+  }
 }
