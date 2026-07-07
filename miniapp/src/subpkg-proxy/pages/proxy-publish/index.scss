@@ -1,0 +1,91 @@
+@import '../../../styles/variables';
+
+.proxy-publish {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding: 24px;
+
+  &__section {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__label {
+    display: block;
+    font-size: 28px;
+    font-weight: 600;
+    color: $color-text-primary;
+    margin-bottom: 16px;
+  }
+
+  &__parcel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__parcel-item {
+    padding: 20px 24px;
+    border: 1px solid $color-border;
+    border-radius: 12px;
+    font-size: 28px;
+    color: $color-text-primary;
+
+    &--selected {
+      border-color: $color-primary;
+      background: rgba(24, 144, 255, 0.05);
+      color: $color-primary;
+      font-weight: 500;
+    }
+  }
+
+  &__input {
+    width: 100%;
+    height: 80px;
+    padding: 0 24px;
+    border: 1px solid $color-border;
+    border-radius: 12px;
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  &__recommended {
+    display: flex;
+    gap: 16px;
+  }
+
+  &__recommended-item {
+    flex: 1;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid $color-border;
+    border-radius: 12px;
+    font-size: 24px;
+    color: $color-text-secondary;
+
+    &--active {
+      border-color: $color-primary;
+      background: rgba(24, 144, 255, 0.05);
+      color: $color-primary;
+    }
+  }
+
+  &__textarea {
+    width: 100%;
+    height: 160px;
+    padding: 16px 24px;
+    border: 1px solid $color-border;
+    border-radius: 12px;
+    font-size: 28px;
+  }
+
+  &__submit {
+    margin-top: 32px;
+    height: 88px;
+    font-size: 30px;
+    border-radius: 999px;
+  }
+}

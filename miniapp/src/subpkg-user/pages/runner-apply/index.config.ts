@@ -1,1 +1,3 @@
-export default definePageConfig({});
+export default definePageConfig({
+  navigationBarTitleText: '申请成为跑腿员',
+});

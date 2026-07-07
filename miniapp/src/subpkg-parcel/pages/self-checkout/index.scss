@@ -1,0 +1,81 @@
+@import '../../../styles/variables';
+
+.self-checkout {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding: 24px;
+
+  &__card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 48px 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    text-align: center;
+  }
+
+  &__title {
+    display: block;
+    font-size: 36px;
+    font-weight: 600;
+    color: $color-text-primary;
+    margin-bottom: 12px;
+  }
+
+  &__desc {
+    display: block;
+    font-size: 26px;
+    color: $color-text-secondary;
+    margin-bottom: 48px;
+  }
+
+  &__input-group {
+    margin-bottom: 32px;
+  }
+
+  &__input {
+    width: 100%;
+    height: 100px;
+    padding: 0 24px;
+    border: 2px solid $color-primary;
+    border-radius: 16px;
+    font-size: 40px;
+    text-align: center;
+    letter-spacing: 12px;
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    margin-bottom: 32px;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: $color-border;
+    }
+  }
+
+  &__divider-text {
+    padding: 0 24px;
+    font-size: 24px;
+    color: $color-text-placeholder;
+  }
+
+  &__scan-btn {
+    height: 88px;
+    font-size: 28px;
+    border-radius: 16px;
+    border: 1px solid $color-primary;
+    color: $color-primary;
+    background: #fff;
+  }
+
+  &__submit {
+    height: 88px;
+    font-size: 30px;
+    border-radius: 999px;
+  }
+}

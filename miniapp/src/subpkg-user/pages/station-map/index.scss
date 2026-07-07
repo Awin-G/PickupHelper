@@ -1,0 +1,66 @@
+@import '../../../styles/variables';
+
+.station-map {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding: 24px;
+
+  &__list {
+    padding-bottom: 40px;
+  }
+
+  &__card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  &__name {
+    font-size: 32px;
+    font-weight: 600;
+    color: $color-text-primary;
+  }
+
+  &__distance {
+    font-size: 24px;
+    color: $color-primary;
+    background: rgba(24, 144, 255, 0.1);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+
+  &__address {
+    display: block;
+    font-size: 26px;
+    color: $color-text-secondary;
+    margin-bottom: 8px;
+  }
+
+  &__hours {
+    display: block;
+    font-size: 24px;
+    color: $color-text-placeholder;
+    margin-bottom: 16px;
+  }
+
+  &__card-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid $color-border;
+  }
+
+  &__nav-btn {
+    min-width: 120px;
+    border-radius: 999px;
+  }
+}
