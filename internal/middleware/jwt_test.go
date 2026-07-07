@@ -247,3 +247,92 @@ func contains(s, sub string) bool {
 	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
 		(s[0:len(sub)] == sub) || contains(s[1:], sub))
 }
+
+// --- Phase 2: ParseRefresh + CurrentUser ---
+
+func TestParseRefresh_Success(t *testing.T) {
+	cfg := mustConfig("top-secret")
+	tok, err := SignRefresh(cfg, Claims{UserID: 7, Role: "user"})
+	if err != nil {
+		t.Fatalf("SignRefresh: %v", err)
+	}
+	out, err := ParseRefresh(cfg, tok)
+	if err != nil {
+		t.Fatalf("ParseRefresh: %v", err)
+	}
+	if out.UserID != 7 || out.Role != "user" {
+		t.Errorf("claims mismatch: %+v", out)
+	}
+}
+
+func TestParseRefresh_Invalid(t *testing.T) {
+	cfg := mustConfig("top-secret")
+	if _, err := ParseRefresh(cfg, "not-a-real-jwt"); err == nil {
+		t.Errorf("ParseRefresh should fail on garbage input")
+	}
+}
+
+func TestParseRefresh_Expired(t *testing.T) {
+	cfg := mustConfig("top-secret")
+	claims := Claims{UserID: 1}
+	claims.RegisteredClaims = jwt.RegisteredClaims{
+		IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
+	}
+	tok, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.JWT.RefreshSecret))
+	if _, err := ParseRefresh(cfg, tok); err == nil {
+		t.Errorf("ParseRefresh should fail on expired token")
+	}
+}
+
+func TestCurrentUser_FullHeaders(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-User-Id", "42")
+	req.Header.Set("X-User-Type", "2")
+	req.Header.Set("X-Station-Id", "7")
+	req.Header.Set("X-Role", "admin")
+	c.Request = req
+
+	uid, ut, sid, role, ok := CurrentUser(c)
+	if !ok {
+		t.Fatalf("ok = false, want true")
+	}
+	if uid != 42 {
+		t.Errorf("userID = %d, want 42", uid)
+	}
+	if ut != 2 {
+		t.Errorf("userType = %d, want 2", ut)
+	}
+	if sid != 7 {
+		t.Errorf("stationID = %d, want 7", sid)
+	}
+	if role != "admin" {
+		t.Errorf("role = %q, want admin", role)
+	}
+}
+
+func TestCurrentUser_NoHeaders(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+
+	_, _, _, _, ok := CurrentUser(c)
+	if ok {
+		t.Errorf("ok = true, want false when X-User-Id missing")
+	}
+}
+
+func TestCurrentUser_InvalidUserID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-User-Id", "not-a-number")
+	c.Request = req
+
+	_, _, _, _, ok := CurrentUser(c)
+	if ok {
+		t.Errorf("ok = true, want false when X-User-Id is non-numeric")
+	}
+}

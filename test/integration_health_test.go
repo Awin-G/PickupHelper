@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"pickup-helper/internal/handler"
-	"pickup-helper/internal/log"
 	"pickup-helper/internal/router"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +22,7 @@ func setupEngine(env *TestEnv) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
 	h := handler.NewHealthHandler(env.DB, env.Rdb)
-	router.Register(engine, env.Cfg, h)
+	router.Register(engine, env.Cfg, &router.Handlers{Health: h})
 	return engine
 }
 
@@ -39,7 +38,7 @@ func TestHealth_Live_Integration(t *testing.T) {
 	engine := setupEngine(env)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	req = req.WithContext(log.WithTraceID(req.Context(), "int-live"))
+	req.Header.Set("X-Trace-Id", "int-live")
 	rr := httptest.NewRecorder()
 	engine.ServeHTTP(rr, req)
 

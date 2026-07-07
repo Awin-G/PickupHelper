@@ -50,7 +50,7 @@ func TestRegister_MiddlewareChain(t *testing.T) {
 	engine := gin.New()
 
 	hh := handler.NewHealthHandler(nil, nil)
-	Register(engine, mustConfig(), hh)
+	Register(engine, mustConfig(), &Handlers{Health: hh})
 
 	// /health should succeed with unified envelope + trace_id.
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
@@ -87,7 +87,7 @@ func TestRegister_CORSHeaders(t *testing.T) {
 	engine := gin.New()
 
 	hh := handler.NewHealthHandler(nil, nil)
-	Register(engine, mustConfig(), hh)
+	Register(engine, mustConfig(), &Handlers{Health: hh})
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	req.Header.Set("Origin", "https://example.com")
@@ -106,7 +106,7 @@ func TestRegister_PreflightShortCircuits(t *testing.T) {
 	engine := gin.New()
 
 	hh := handler.NewHealthHandler(nil, nil)
-	Register(engine, mustConfig(), hh)
+	Register(engine, mustConfig(), &Handlers{Health: hh})
 
 	req := httptest.NewRequest(http.MethodOptions, "/health", nil)
 	req.Header.Set("Origin", "https://example.com")
@@ -127,7 +127,7 @@ func TestRegister_APIV1RequiresJWT(t *testing.T) {
 	engine := gin.New()
 
 	hh := handler.NewHealthHandler(nil, nil)
-	Register(engine, mustConfig(), hh)
+	Register(engine, mustConfig(), &Handlers{Health: hh})
 
 	// /api/v1/anything doesn't exist as a route, but NoRoute re-runs JWT.
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/anything", nil)
@@ -152,7 +152,7 @@ func TestRegister_APIV1ValidTokenReturns404(t *testing.T) {
 
 	cfg := mustConfig()
 	hh := handler.NewHealthHandler(nil, nil)
-	Register(engine, cfg, hh)
+	Register(engine, cfg, &Handlers{Health: hh})
 
 	// Build a valid token and request a non-existent route.
 	tok := signTestToken(t, cfg.JWT.AccessSecret, 1)
@@ -178,7 +178,7 @@ func TestRegister_APIV1PreflightBypassesJWT(t *testing.T) {
 	engine := gin.New()
 
 	hh := handler.NewHealthHandler(nil, nil)
-	Register(engine, mustConfig(), hh)
+	Register(engine, mustConfig(), &Handlers{Health: hh})
 
 	req := httptest.NewRequest(http.MethodOptions, "/api/v1/anything", nil)
 	req.Header.Set("Origin", "https://example.com")

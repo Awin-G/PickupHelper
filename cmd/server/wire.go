@@ -3,9 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 
 	"pickup-helper/internal/config"
+	"pickup-helper/internal/handler"
 	"pickup-helper/internal/repository"
+	"pickup-helper/internal/router"
+	"pickup-helper/internal/service"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
@@ -16,6 +21,21 @@ type Container struct {
 	Cfg *config.Config
 	DB  *sqlx.DB
 	RDB *redis.Client
+
+	// Repositories (stateless, safe for concurrent use).
+	userRepo   repository.UserRepo
+	adminRepo  repository.AdminRepo
+	runnerRepo repository.RunnerAppRepo
+	smsCache   repository.SMSCodeCache
+
+	// Services.
+	authSvc *service.AuthService
+	userSvc *service.UserService
+
+	// Handlers.
+	healthH *handler.HealthHandler
+	authH   *handler.AuthHandler
+	userH   *handler.UserHandler
 }
 
 // BuildContainer manually wires dependencies (no DI framework).
@@ -30,7 +50,50 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("redis: %w", err)
 	}
-	return &Container{Cfg: cfg, DB: db, RDB: rdb}, nil
+
+	// Repositories.
+	userRepo := repository.NewUserRepo()
+	adminRepo := repository.NewAdminRepo()
+	runnerRepo := repository.NewRunnerAppRepo()
+	smsCache := repository.NewSMSCodeCache(rdb)
+
+	// Services.
+	env := os.Getenv("APP_ENV")
+	if env == "" {
+		env = "dev"
+	}
+	sms := service.NewSMSProvider(env, slog.Default())
+	authSvc := service.NewAuthService(userRepo, adminRepo, smsCache, sms, cfg, db)
+	userSvc := service.NewUserService(userRepo, runnerRepo, db)
+
+	// Handlers.
+	healthH := handler.NewHealthHandler(db, rdb)
+	authH := handler.NewAuthHandler(authSvc)
+	userH := handler.NewUserHandler(userSvc)
+
+	return &Container{
+		Cfg:        cfg,
+		DB:         db,
+		RDB:        rdb,
+		userRepo:   userRepo,
+		adminRepo:  adminRepo,
+		runnerRepo: runnerRepo,
+		smsCache:   smsCache,
+		authSvc:    authSvc,
+		userSvc:    userSvc,
+		healthH:    healthH,
+		authH:      authH,
+		userH:      userH,
+	}, nil
+}
+
+// Handlers returns the router.Handlers bundle for router.Register.
+func (c *Container) Handlers() *router.Handlers {
+	return &router.Handlers{
+		Health: c.healthH,
+		Auth:   c.authH,
+		User:   c.userH,
+	}
 }
 
 // Close releases all resources held by the container.

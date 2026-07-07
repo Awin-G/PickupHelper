@@ -87,18 +87,37 @@ func ParseRefresh(cfg *config.Config, tokenStr string) (*Claims, error) {
 	return claims, nil
 }
 
-// CurrentUser extracts the authenticated user's ID from the gin context.
-// Returns (0, false) when no authenticated user is present.
-func CurrentUser(c *gin.Context) (int64, bool) {
-	v, ok := c.Get("user_id")
-	if !ok {
-		return 0, false
+// CurrentUser extracts the authenticated user's identity from the gin
+// context. The JWT middleware stores claims both in c.Keys and in the
+// X-User-Id / X-User-Type / X-Station-Id / X-Role headers (the latter
+// overrides any client-forged value). This helper reads from the headers
+// so it works even for handlers mounted on a sub-engine that shares the
+// request but not the gin context.
+//
+// ok is false when X-User-Id is missing or non-positive; the other fields
+// are zero-valued in that case.
+func CurrentUser(c *gin.Context) (userID int64, userType int, stationID int64, role string, ok bool) {
+	idStr := c.GetHeader("X-User-Id")
+	if idStr == "" {
+		return 0, 0, 0, "", false
 	}
-	id, ok := v.(int64)
-	if !ok || id <= 0 {
-		return 0, false
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		return 0, 0, 0, "", false
 	}
-	return id, true
+	userID = id
+	if v := c.GetHeader("X-User-Type"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			userType = n
+		}
+	}
+	if v := c.GetHeader("X-Station-Id"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			stationID = n
+		}
+	}
+	role = c.GetHeader("X-Role")
+	return userID, userType, stationID, role, true
 }
 
 // JWTAuth validates Bearer tokens in the Authorization header. On success

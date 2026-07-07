@@ -10,6 +10,7 @@ import (
 	"pickup-helper/internal/log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -20,12 +21,19 @@ var (
 
 // Validator returns the lazily-initialised singleton validator instance.
 // It is safe to call concurrently. The phone_cn custom validator is
-// registered on first call.
+// registered on first call, both on the returned validator and on gin's
+// default binding validator (so c.ShouldBindJSON/ShouldBindQuery honour it).
 func Validator() *validator.Validate {
 	validatorOnce.Do(func() {
 		v = validator.New()
 		if err := v.RegisterValidation("phone_cn", validatePhoneCN); err != nil {
 			panic("register phone_cn validator: " + err.Error())
+		}
+		// Mirror the registration onto gin's binding validator so that
+		// c.ShouldBindJSON / c.ShouldBindQuery — which invoke gin's
+		// validator automatically — also recognise the phone_cn tag.
+		if bv, ok := binding.Validator.Engine().(*validator.Validate); ok {
+			_ = bv.RegisterValidation("phone_cn", validatePhoneCN)
 		}
 	})
 	return v

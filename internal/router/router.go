@@ -11,6 +11,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handlers bundles all module handlers that the router mounts. Phase 1
+// only populates Health; Phase 2 adds Auth and User. Future phases extend
+// this struct (parcel / pickup / station / etc.).
+type Handlers struct {
+	Health *handler.HealthHandler
+	Auth   *handler.AuthHandler
+	User   *handler.UserHandler
+}
+
 // Register wires the global middleware chain and application routes onto
 // the engine.
 //
@@ -21,13 +30,15 @@ import (
 //  4. CORS      — set Access-Control-* headers, short-circuit OPTIONS
 //  5. RateLimit — per-IP token bucket
 //
-// /api/v1 group additionally mounts JWTAuth so all sub-routes require a
-// valid access token. Sub-groups that allow public access (e.g. /auth/*)
-// should be registered on a fresh group WITHOUT copying the middleware.
+// Route groups under /api/v1:
+//   - /auth/*                     public  (no JWT)
+//   - /admin/auth/login           public  (no JWT, admin login)
+//   - /user/*                     user    (JWT required)
+//   - /admin/*                    admin   (JWT + AdminOnly)
 //
 // engine.NoRoute enforces JWT for unmatched /api/v1/* paths so that
 // `curl /api/v1/anything` without a token returns 401 (not 404).
-func Register(engine *gin.Engine, cfg *config.Config, h *handler.HealthHandler) {
+func Register(engine *gin.Engine, cfg *config.Config, h *Handlers) {
 	engine.Use(
 		middleware.Recovery(),
 		middleware.TraceID(),
@@ -37,12 +48,36 @@ func Register(engine *gin.Engine, cfg *config.Config, h *handler.HealthHandler) 
 	)
 
 	// Public health endpoints (no JWT).
-	h.Register(engine)
+	h.Health.Register(engine)
 
-	// Authenticated API v1 group — Phase 2+ adds business routes here
-	// via NewAPIV1Group. No routes yet, so the group itself is a no-op;
-	// the NoRoute handler below enforces JWT for unmatched /api/v1/* paths.
-	NewAPIV1Group(engine, cfg)
+	// --- Public API v1 routes (no JWT) ---
+	// We deliberately use engine.Group (not NewAPIV1Group) so the JWT
+	// middleware is NOT inherited. Each public sub-group is responsible
+	// for its own protection (none — these are intentionally open).
+	publicV1 := engine.Group("/api/v1")
+	if h.Auth != nil {
+		h.Auth.RegisterPublicRoutes(publicV1.Group("/auth"))
+	}
+	// Admin login is public despite the /admin prefix — AdminOnly must
+	// NOT be applied to this route.
+	if h.Auth != nil {
+		h.Auth.RegisterAdminAuthRoutes(publicV1)
+	}
+
+	// --- Authenticated API v1 routes (JWT required) ---
+	jwtGroup := NewAPIV1Group(engine, cfg)
+
+	// User-facing routes (JWT only).
+	if h.User != nil {
+		h.User.RegisterUserRoutes(jwtGroup.Group("/user"))
+	}
+
+	// Admin-only routes (JWT + AdminOnly).
+	if h.User != nil {
+		adminGroup := jwtGroup.Group("/admin")
+		adminGroup.Use(middleware.AdminOnly())
+		h.User.RegisterAdminRoutes(adminGroup)
+	}
 
 	// NoRoute: enforce JWT for unmatched /api/v1/* paths.
 	// Without this, `GET /api/v1/nonexistent` would return 404 (bypassing
@@ -65,14 +100,11 @@ func Register(engine *gin.Engine, cfg *config.Config, h *handler.HealthHandler) 
 	})
 }
 
-// NewAPIV1Group creates the authenticated /api/v1 group. Phase 2+ will
-// call this (or extend Register) to attach business routes.
-// The returned group has JWTAuth mounted; sub-groups can opt out by
-// creating a fresh group via engine.Group("/api/v1/...") without copying
-// the middleware.
+// NewAPIV1Group creates the authenticated /api/v1 group with JWTAuth.
+// Sub-groups can opt out of JWT by registering directly on the engine
+// via engine.Group("/api/v1/...") without copying the middleware.
 func NewAPIV1Group(engine *gin.Engine, cfg *config.Config) *gin.RouterGroup {
 	g := engine.Group("/api/v1")
 	g.Use(middleware.JWTAuth(cfg))
-	// No routes yet — phase 2+ will add them here.
 	return g
 }

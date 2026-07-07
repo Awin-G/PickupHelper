@@ -8,8 +8,8 @@ import (
 	"syscall"
 
 	"pickup-helper/internal/config"
-	"pickup-helper/internal/handler"
 	"pickup-helper/internal/log"
+	"pickup-helper/internal/middleware"
 	"pickup-helper/internal/router"
 	"pickup-helper/internal/server"
 
@@ -24,6 +24,10 @@ func main() {
 
 	log.Init(cfg.Log.Level)
 
+	// Initialise the custom validator (registers phone_cn on gin's binding
+	// validator) so the first request doesn't panic inside ShouldBindJSON.
+	_ = middleware.Validator()
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -35,8 +39,7 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
-	healthH := handler.NewHealthHandler(container.DB, container.RDB)
-	router.Register(engine, cfg, healthH)
+	router.Register(engine, cfg, container.Handlers())
 
 	srv := server.New(cfg, engine)
 	log.From(ctx).InfoContext(ctx, "server starting", "addr", srv.Addr())

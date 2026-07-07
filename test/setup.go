@@ -67,6 +67,15 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 		Redis: config.RedisConfig{
 			Host: "127.0.0.1", Port: 6379, DB: 0, PoolSize: 10,
 		},
+		JWT: config.JWTConfig{
+			AccessSecret:  "test-access-secret",
+			RefreshSecret: "test-refresh-secret",
+			AccessTTL:     time.Hour,
+			RefreshTTL:    24 * time.Hour,
+			Issuer:        "pickup-helper-test",
+		},
+		RateLimit: config.RateLimitConfig{QPS: 0, Burst: 0}, // disabled
+		CORS:      config.CORSConfig{AllowedOrigins: []string{"*"}},
 	}
 
 	env := &TestEnv{
