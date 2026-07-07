@@ -1,3 +1,4 @@
 export default definePageConfig({
-  navigationBarTitleText: '首页'
-})
+  navigationBarTitleText: '快递驿站助手',
+  enablePullDownRefresh: true,
+});
