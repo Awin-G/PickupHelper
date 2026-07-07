@@ -46,6 +46,10 @@ type User struct {
 	IsBlacklisted int8          `db:"is_blacklisted" json:"is_blacklisted"`
 	CreatedAt    time.Time      `db:"created_at" json:"created_at"`
 	UpdatedAt    time.Time      `db:"updated_at" json:"updated_at"`
+	// AvatarData is stored as a BLOB column (JPEG compressed, ≤150KB).
+	// Never exposed in JSON; only served via dedicated avatar endpoint.
+	AvatarData        []byte `db:"avatar_data" json:"-"`
+	AvatarContentType string `db:"avatar_content_type" json:"-"`
 }
 
 // IsBlacklistedBool returns the blacklist flag as a bool.

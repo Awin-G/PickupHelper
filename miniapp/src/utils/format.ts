@@ -45,3 +45,9 @@ export function maskTrackingNo(trackingNo: string): string {
   if (!trackingNo || trackingNo.length <= 6) return trackingNo;
   return trackingNo.slice(0, 3) + '***' + trackingNo.slice(-3);
 }
+
+/** 生成随机昵称: 用户 + 4位随机数 */
+export function generateNickname(): string {
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  return `用户${randomNum}`;
+}

@@ -28,6 +28,7 @@ export default defineAppConfig({
         'pages/runner-apply/index',
         'pages/message-center/index',
         'pages/station-map/index',
+        'pages/profile-edit/index',
       ],
     },
   ],

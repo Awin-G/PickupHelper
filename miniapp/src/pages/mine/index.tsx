@@ -12,7 +12,6 @@ export default function MinePage() {
     const newRole = currentRole === 'receiver' ? 'runner' : 'receiver';
     switchRole(newRole);
     Taro.showToast({ title: `已切换为${newRole === 'receiver' ? '收件人' : '跑腿员'}模式`, icon: 'success' });
-    // 刷新首页数据
     setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
   };
 
@@ -29,6 +28,17 @@ export default function MinePage() {
     });
   };
 
+  const getAvatarUrl = () => {
+    if (userInfo?.avatar) {
+      if (userInfo.avatar.startsWith('/')) {
+        const base = process.env.TARO_APP_API_BASE || 'http://localhost:18080/api/v1';
+        return base.replace('/api/v1', '') + userInfo.avatar;
+      }
+      return userInfo.avatar;
+    }
+    return '';
+  };
+
   const menuItems = [
     { icon: '📦', title: '我的代取订单', path: '/subpkg-proxy/pages/proxy-orders/index' },
     { icon: '🏃', title: '申请成为跑腿员', path: '/subpkg-user/pages/runner-apply/index' },
@@ -38,11 +48,18 @@ export default function MinePage() {
 
   return (
     <View className='mine-page'>
-      <View className='mine-page__header'>
+      <View
+        className='mine-page__header'
+        onClick={() => Taro.navigateTo({ url: '/subpkg-user/pages/profile-edit/index' })}
+      >
         <View className='mine-page__avatar'>
-          <Text className='mine-page__avatar-text'>
-            {userInfo ? userInfo.nickname.charAt(0) : '?'}
-          </Text>
+          {userInfo?.avatar ? (
+            <Image className='mine-page__avatar-img' src={getAvatarUrl()} mode='aspectFill' />
+          ) : (
+            <Text className='mine-page__avatar-text'>
+              {userInfo ? userInfo.nickname.charAt(0) : '?'}
+            </Text>
+          )}
         </View>
         <View className='mine-page__info'>
           <Text className='mine-page__name'>{userInfo ? userInfo.nickname : '未登录'}</Text>
@@ -56,9 +73,9 @@ export default function MinePage() {
             </>
           )}
         </View>
+        <Text className='mine-page__arrow'>›</Text>
       </View>
 
-      {/* 角色切换 */}
       {userInfo && userInfo.runner_status === RUNNER_STATUS.APPROVED && (
         <View className='mine-page__switch' onClick={handleSwitchRole}>
           <Text className='mine-page__switch-icon'>🔄</Text>
@@ -69,7 +86,6 @@ export default function MinePage() {
         </View>
       )}
 
-      {/* 菜单列表 */}
       <View className='mine-page__menu'>
         {menuItems.map((item) => (
           <View
@@ -84,7 +100,6 @@ export default function MinePage() {
         ))}
       </View>
 
-      {/* 退出登录 */}
       {userInfo && (
         <View className='mine-page__logout' onClick={handleLogout}>
           <Text>退出登录</Text>

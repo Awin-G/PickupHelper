@@ -1,4 +1,5 @@
 import { request } from './request';
+import Taro from '@tarojs/taro';
 import type { LoginParams, LoginResult, UserInfo } from './types';
 
 export const authApi = {
@@ -39,4 +40,25 @@ export const authApi = {
       method: 'PUT',
       data,
     }),
+
+  /** 上传头像 */
+  uploadAvatar: async (filePath: string) => {
+    const token = storage.get<string>('token');
+    const res = await Taro.uploadFile({
+      url: `${process.env.TARO_APP_API_BASE || 'http://localhost:18080/api/v1'}/user/avatar`,
+      filePath,
+      name: 'file',
+      header: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
+    const data = JSON.parse(res.data);
+    if (data.code !== 0) {
+      throw new Error(data.msg);
+    }
+    return data.data as { avatar_url: string };
+  },
 };
+
+// 需要引入 storage
+import { storage } from '@/utils/storage';
