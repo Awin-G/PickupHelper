@@ -35,27 +35,36 @@ const mockRoutes: Record<string, (config: RequestConfig) => Promise<any>> = {
   }),
   'GET /user/info': async () => mock.mockUser,
   'PUT /user/profile': async () => undefined,
-  'GET /parcels/my': async (config) =>
-    mock.paginate(mock.mockParcels, config.params?.page || 1, config.params?.page_size || 20),
+  'GET /parcels/my': async (config) => {
+    const params = config.params || {};
+    return mock.paginate(mock.mockParcels, params.page || 1, params.page_size || 20);
+  },
   'GET /parcels/pending-count': async () => ({
     count: mock.mockParcels.filter((p) => p.status === 1 || p.status === 3).length,
   }),
   'GET /parcels/:id': async (config) => {
-    const id = Number(config.url.match(/\/parcels\/(\d+)/)?.[1]);
+    const match = config.url.match(/\/parcels\/(\d+)/);
+    const id = match ? Number(match[1]) : 1;
     return mock.mockParcels.find((p) => p.id === id) || mock.mockParcels[0];
   },
   'GET /parcels/:id/pickup-code': async () => mock.mockPickupCode,
-  'GET /proxy/tasks': async (config) =>
-    mock.paginate(mock.mockTasks, config.params?.page || 1, config.params?.page_size || 20),
+  'GET /proxy/tasks': async (config) => {
+    const params = config.params || {};
+    return mock.paginate(mock.mockTasks, params.page || 1, params.page_size || 20);
+  },
   'POST /proxy/publish': async () => ({ id: 99 }),
   'POST /proxy/accept/:id': async () => mock.mockOrders[0],
   'GET /proxy/orders/:id': async () => mock.mockOrders[0],
-  'GET /proxy/orders/my': async (config) =>
-    mock.paginate(mock.mockOrders, config.params?.page || 1, config.params?.page_size || 20),
+  'GET /proxy/orders/my': async (config) => {
+    const params = config.params || {};
+    return mock.paginate(mock.mockOrders, params.page || 1, params.page_size || 20);
+  },
   'POST /proxy/orders/:id/confirm': async () => undefined,
   'POST /proxy/orders/:id/cancel': async () => undefined,
-  'GET /notifications': async (config) =>
-    mock.paginate(mock.mockNotifications, config.params?.page || 1, config.params?.page_size || 20),
+  'GET /notifications': async (config) => {
+    const params = config.params || {};
+    return mock.paginate(mock.mockNotifications, params.page || 1, params.page_size || 20);
+  },
   'GET /notifications/unread-count': async () => ({
     count: mock.mockNotifications.filter((n) => !n.is_read).length,
   }),
