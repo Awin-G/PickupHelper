@@ -1,9 +1,10 @@
 import { View, Text, Input, Button as TaroButton } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@nutui/nutui-react-taro';
 import { useUserStore } from '@/stores/useUserStore';
 import { authApi } from '@/api/auth';
+import { generateNickname } from '@/utils/format';
 import { isValidPhone, isValidCode } from '@/utils/validator';
 import './index.scss';
 
@@ -14,9 +15,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [wxLoading, setWxLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [wxCode, setWxCode] = useState('');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { login, wechatLogin, isLoggedIn } = useUserStore();
+  const { login, isLoggedIn } = useUserStore();
+  const { setToken, setUserInfo } = useUserStore.getState();
+
+  // 提前获取 wx.login code
+  useEffect(() => {
+    Taro.login().then((res) => {
+      if (res.code) {
+        console.log('预获取 wx.login code:', res.code);
+        setWxCode(res.code);
+      }
+    });
+  }, []);
 
   if (isLoggedIn) {
     Taro.switchTab({ url: '/pages/index/index' });
@@ -76,7 +89,7 @@ export default function LoginPage() {
     }
   };
 
-  // 微信手机号授权回调（新用户）
+  // 微信手机号授权回调
   const handleGetPhoneNumber = async (e: any) => {
     console.log('getPhoneNumber 回调:', e.detail);
 
@@ -85,30 +98,57 @@ export default function LoginPage() {
       return;
     }
 
-    // 检查是否授权成功
     if (e.detail.errMsg !== 'getPhoneNumber:ok') {
       console.log('授权失败:', e.detail.errMsg);
       Taro.showToast({ title: '手机号授权取消', icon: 'none' });
       return;
     }
 
-    // 获取到 phone_code，调用微信登录
     const phoneCode = e.detail.code;
     console.log('获取到 phone_code:', phoneCode);
+    console.log('使用 wxCode:', wxCode);
 
     if (!phoneCode) {
       Taro.showToast({ title: '获取手机号失败', icon: 'none' });
       return;
     }
 
+    if (!wxCode) {
+      Taro.showToast({ title: '微信登录凭证获取中，请稍后重试', icon: 'none' });
+      // 重新获取 code
+      Taro.login().then((res) => {
+        if (res.code) setWxCode(res.code);
+      });
+      return;
+    }
+
     setWxLoading(true);
     try {
-      await wechatLogin(phoneCode);
+      const nickname = generateNickname();
+      const result = await authApi.wechatLogin({
+        code: wxCode,
+        phone_code: phoneCode,
+        nickname,
+      });
+
+      storage.set('token', result.access_token);
+      storage.set('refresh_token', result.refresh_token);
+      useUserStore.setState({
+        token: result.access_token,
+        refreshToken: result.refresh_token,
+        userInfo: result.user,
+        isLoggedIn: true,
+      });
+
       Taro.showToast({ title: '登录成功', icon: 'success' });
       setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
     } catch (err: any) {
       console.error('微信登录失败:', err);
-      Taro.showToast({ title: `登录失败: ${err.message || '未知错误'}`, icon: 'none', duration: 3000 });
+      Taro.showToast({ title: `登录失败: ${err.msg || err.message || '未知错误'}`, icon: 'none', duration: 3000 });
+      // 登录失败后重新获取 code
+      Taro.login().then((res) => {
+        if (res.code) setWxCode(res.code);
+      });
     } finally {
       setWxLoading(false);
     }
@@ -122,7 +162,7 @@ export default function LoginPage() {
       </View>
 
       <View className='login-page__form'>
-        {/* 微信手机号授权登录（推荐） */}
+        {/* 微信手机号授权登录 */}
         <TaroButton
           className='login-page__wx-phone-btn'
           open-type='getPhoneNumber'
