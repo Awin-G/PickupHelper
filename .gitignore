@@ -1,36 +1,33 @@
-# GSD planning artifacts - kept local per project config
+# ---- Backend Go project (see backend/) ----
+/backend/bin/
+/backend/vendor/
+/backend/.env
+/backend/.env.local
+/backend/*.local
+/backend/tmp/
+/backend/*.log
+
+# ---- GSD planning artifacts - kept local per project config ----
 .planning/
 
-# Trae IDE local skill/agent install (machine-local)
+# ---- Trae IDE local skill/agent install (machine-local) ----
 .trae/
 
-# Go
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-/bin/
-/vendor/
-go.work.sum
-
-# IDE
+# ---- IDE ----
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# OS
+# ---- OS ----
 .DS_Store
 Thumbs.db
 
-# Local env / secrets
-.env
-.env.local
-*.local
+# ---- Office lock files ----
+**/.~lock.*#
 
-# Build / cache
-/tmp/
-*.log
+# ---- Misc ----
+*.exe
+*.dll
+*.so
+*.dylib
