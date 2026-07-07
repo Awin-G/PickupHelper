@@ -103,6 +103,13 @@ const (
 	ErrProxyNotPendingConfirm = 10432 // 订单状态非待确认
 	ErrProxyRejectNoReason    = 10433 // 拒绝时未提供原因
 	ErrProxyCancelNotAllowed  = 10443 // 订单状态不允许取消
+
+	// Shelf module error codes (10501~10599) — see 详细设计文档/api详细设计.md 6.
+	ErrShelfCodeExists    = 10501 // 货架编号已存在
+	ErrShelfCapacityInvalid = 10502 // 容量或排/列数值非法
+	ErrShelfNotFound      = 10511 // 货架不存在
+	ErrShelfMaxBelowCurrent= 10512 // max_capacity 小于当前占用
+	ErrShelfCodeUsed      = 10513 // 货架编号已被占用
 )
 
 // HTTPStatus maps a business code to its HTTP status code.
@@ -171,6 +178,13 @@ func HTTPStatus(code int) int {
 		return http.StatusNotFound
 	case ErrProxyNotRunner:
 		return http.StatusForbidden
+	// Shelf module — 10501~10513
+	case ErrShelfCodeExists, ErrShelfCodeUsed, ErrShelfMaxBelowCurrent:
+		return http.StatusConflict
+	case ErrShelfCapacityInvalid:
+		return http.StatusBadRequest
+	case ErrShelfNotFound:
+		return http.StatusNotFound
 	default:
 		// Module-specific codes default to 500 unless they fall in a
 		// known range. Phase 2+ can refine this as needed.
@@ -326,6 +340,17 @@ func Msg(code int) string {
 		return "拒绝时未提供原因"
 	case ErrProxyCancelNotAllowed:
 		return "订单状态不允许取消"
+	// Shelf module — 10501~10513
+	case ErrShelfCodeExists:
+		return "货架编号已存在"
+	case ErrShelfCapacityInvalid:
+		return "容量或排/列数值非法"
+	case ErrShelfNotFound:
+		return "货架不存在"
+	case ErrShelfMaxBelowCurrent:
+		return "最大容量小于当前占用"
+	case ErrShelfCodeUsed:
+		return "货架编号已被占用"
 	default:
 		return "未知错误"
 	}

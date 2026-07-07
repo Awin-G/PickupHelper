@@ -38,6 +38,7 @@ type Container struct {
 	parcelSvc *service.ParcelService
 	pickupSvc *service.PickupService
 	proxySvc  *service.ProxyService
+	shelfSvc  *service.ShelfService
 
 	// Handlers.
 	healthH *handler.HealthHandler
@@ -46,6 +47,7 @@ type Container struct {
 	parcelH *handler.ParcelHandler
 	pickupH *handler.PickupHandler
 	proxyH  *handler.ProxyHandler
+	shelfH  *handler.ShelfHandler
 }
 
 // BuildContainer manually wires dependencies (no DI framework).
@@ -82,6 +84,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	parcelSvc := service.NewParcelService(parcelRepo, shelfRepo, userRepo, db)
 	pickupSvc := service.NewPickupService(parcelRepo, pickupRepo, shelfRepo, userRepo, db)
 	proxySvc := service.NewProxyService(proxyRepo, parcelRepo, userRepo, db)
+	shelfSvc := service.NewShelfService(shelfRepo, db)
 
 	// Handlers.
 	healthH := handler.NewHealthHandler(db, rdb)
@@ -90,6 +93,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	parcelH := handler.NewParcelHandler(parcelSvc)
 	pickupH := handler.NewPickupHandler(pickupSvc)
 	proxyH := handler.NewProxyHandler(proxySvc)
+	shelfH := handler.NewShelfHandler(shelfSvc)
 
 	return &Container{
 		Cfg:        cfg,
@@ -108,12 +112,14 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 		parcelSvc:  parcelSvc,
 		pickupSvc:  pickupSvc,
 		proxySvc:   proxySvc,
+		shelfSvc:   shelfSvc,
 		healthH:    healthH,
 		authH:      authH,
 		userH:      userH,
 		parcelH:    parcelH,
 		pickupH:    pickupH,
 		proxyH:     proxyH,
+		shelfH:     shelfH,
 	}, nil
 }
 
@@ -126,6 +132,7 @@ func (c *Container) Handlers() *router.Handlers {
 		Parcel: c.parcelH,
 		Pickup: c.pickupH,
 		Proxy:  c.proxyH,
+		Shelf:  c.shelfH,
 	}
 }
 
