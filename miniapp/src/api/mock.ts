@@ -146,4 +146,21 @@ export const mockRoutes: Record<string, (config: RequestConfig) => Promise<any>>
   'GET /notifications/unread-count': async () => ({ count: mockNotifications.filter((n) => !n.is_read).length }),
   'POST /notifications/:id/read': async () => undefined,
   'POST /notifications/read-all': async () => undefined,
+  // Pickup module
+  'POST /pickup/verify': async () => ({
+    parcel_id: 1,
+    tracking_no: 'SF1234567890',
+    pickup_time: new Date().toISOString(),
+    operator_type: 4,
+  }),
+  'POST /pickup/self-checkout': async () => ({
+    parcel_id: 1,
+    pickup_time: new Date().toISOString(),
+  }),
+  'POST /pickup/scan-station': async () => ({
+    success: [
+      { pickup_code: '382916', parcel_id: 1, pickup_time: new Date().toISOString() },
+    ],
+    failed: [],
+  }),
 };

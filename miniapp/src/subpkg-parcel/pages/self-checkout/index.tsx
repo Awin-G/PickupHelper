@@ -1,7 +1,7 @@
 import { View, Text, Input } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState } from 'react';
-import { Button } from '@nutui/nutui-react-taro';
+import { pickupApi } from '@/api/pickup';
 import './index.scss';
 
 export default function SelfCheckoutPage() {
@@ -27,10 +27,13 @@ export default function SelfCheckoutPage() {
 
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 1000));
+      await pickupApi.selfCheckout({
+        pickup_code: pickupCode,
+        station_id: 1, // TODO: 从用户信息获取
+      });
       Taro.showToast({ title: '出库成功', icon: 'success' });
       setTimeout(() => Taro.navigateBack(), 1500);
-    } catch {
+    } catch (err) {
       Taro.showToast({ title: '出库失败', icon: 'none' });
     } finally {
       setLoading(false);
@@ -58,8 +61,8 @@ export default function SelfCheckoutPage() {
           <Text>扫描驿站二维码</Text>
         </View>
       </View>
-      <View className='self-checkout__submit' onClick={handleSubmit}>
-        <Text>确认出库</Text>
+      <View className={`self-checkout__submit ${loading ? 'self-checkout__submit--loading' : ''}`} onClick={loading ? undefined : handleSubmit}>
+        <Text>{loading ? '处理中...' : '确认出库'}</Text>
       </View>
     </View>
   );
