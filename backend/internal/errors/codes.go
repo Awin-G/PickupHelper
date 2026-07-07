@@ -75,6 +75,16 @@ const (
 	ErrParcelStatusReadonly  = 10233 // 目标状态不支持手工变更
 	ErrParcelNotOwner        = 10242 // 非本人包裹
 	ErrParcelNotPending      = 10243 // 包裹状态非待取
+
+	// Pickup module error codes (10301~10399) — see 详细设计文档/api详细设计.md 4.1~4.4.
+	ErrPickupCodeInvalid    = 10301 // 取件码不存在或已失效
+	ErrPickupStatusNotPending = 10302 // 包裹状态非「待取」
+	ErrPickupGeoAbnormal    = 10303 // 地理位置异常
+	ErrPickupUserBlacklisted = 10304 // 用户在黑名单中
+	ErrPickupFreqLimit      = 10305 // 取件频次超限
+	ErrSelfCheckoutInvalid  = 10311 // 取件码无效
+	ErrSelfCheckoutGeoFar   = 10312 // 地理位置超距
+	ErrSelfCheckoutRisk     = 10313 // 风控触发
 )
 
 // HTTPStatus maps a business code to its HTTP status code.
@@ -124,6 +134,14 @@ func HTTPStatus(code int) int {
 		return http.StatusNotFound
 	case ErrParcelNoPermission:
 		return http.StatusForbidden
+	// Pickup module — 10301~10313
+	case ErrPickupCodeInvalid, ErrSelfCheckoutInvalid:
+		return http.StatusBadRequest
+	case ErrPickupStatusNotPending, ErrPickupGeoAbnormal, ErrPickupUserBlacklisted,
+		ErrSelfCheckoutGeoFar, ErrSelfCheckoutRisk:
+		return http.StatusForbidden
+	case ErrPickupFreqLimit:
+		return http.StatusTooManyRequests
 	default:
 		// Module-specific codes default to 500 unless they fall in a
 		// known range. Phase 2+ can refine this as needed.
@@ -229,6 +247,23 @@ func Msg(code int) string {
 		return "非本人包裹"
 	case ErrParcelNotPending:
 		return "包裹状态非待取"
+	// Pickup module — 10301~10313
+	case ErrPickupCodeInvalid:
+		return "取件码不存在或已失效"
+	case ErrPickupStatusNotPending:
+		return "包裹状态非待取"
+	case ErrPickupGeoAbnormal:
+		return "地理位置异常"
+	case ErrPickupUserBlacklisted:
+		return "用户在黑名单中"
+	case ErrPickupFreqLimit:
+		return "取件频次超限"
+	case ErrSelfCheckoutInvalid:
+		return "取件码无效"
+	case ErrSelfCheckoutGeoFar:
+		return "地理位置超距"
+	case ErrSelfCheckoutRisk:
+		return "风控触发，需管理员介入"
 	default:
 		return "未知错误"
 	}

@@ -19,6 +19,7 @@ type Handlers struct {
 	Auth   *handler.AuthHandler
 	User   *handler.UserHandler
 	Parcel *handler.ParcelHandler
+	Pickup *handler.PickupHandler
 }
 
 // Register wires the global middleware chain and application routes onto
@@ -90,6 +91,11 @@ func Register(engine *gin.Engine, cfg *config.Config, h *Handlers) {
 	// Parcel user routes (JWT only).
 	if h.Parcel != nil {
 		h.Parcel.RegisterParcelUserRoutes(jwtGroup.Group("/parcels"))
+	}
+
+	// Pickup routes (JWT only, handler does internal permission checks).
+	if h.Pickup != nil {
+		h.Pickup.RegisterPickupRoutes(jwtGroup.Group("/pickup"))
 	}
 
 	// NoRoute: enforce JWT for unmatched /api/v1/* paths.

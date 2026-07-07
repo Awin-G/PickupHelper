@@ -116,13 +116,17 @@ func (r *mysqlParcelRepo) FindByTrackingNo(ctx context.Context, db DBTX, trackin
 
 func (r *mysqlParcelRepo) FindByPickupCode(ctx context.Context, db DBTX, pickupCode string, stationID int64) (*models.Parcel, error) {
 	var p models.Parcel
-	err := db.GetContext(ctx, &p,
-		`SELECT id, station_id, tracking_no, courier_company, shelf_code,
-		        pickup_code, receiver_phone, receiver_user_id, receiver_name,
-		        weight, is_fragile, remarks, status, storage_time, pickup_time,
-		        return_time, last_notify_time, notify_count, operator_id, updated_at
-		 FROM parcels WHERE pickup_code = ? AND station_id = ? AND status = ?`,
-		pickupCode, stationID, models.ParcelStatusPending)
+	query := `SELECT id, station_id, tracking_no, courier_company, shelf_code,
+		          pickup_code, receiver_phone, receiver_user_id, receiver_name,
+		          weight, is_fragile, remarks, status, storage_time, pickup_time,
+		          return_time, last_notify_time, notify_count, operator_id, updated_at
+		   FROM parcels WHERE pickup_code = ? AND status = ?`
+	args := []any{pickupCode, models.ParcelStatusPending}
+	if stationID > 0 {
+		query += " AND station_id = ?"
+		args = append(args, stationID)
+	}
+	err := db.GetContext(ctx, &p, query, args...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, sql.ErrNoRows
 	}

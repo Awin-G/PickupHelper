@@ -29,17 +29,20 @@ type Container struct {
 	smsCache   repository.SMSCodeCache
 	parcelRepo repository.ParcelRepo
 	shelfRepo  repository.ShelfRepo
+	pickupRepo repository.PickupLogRepo
 
 	// Services.
 	authSvc   *service.AuthService
 	userSvc   *service.UserService
 	parcelSvc *service.ParcelService
+	pickupSvc *service.PickupService
 
 	// Handlers.
 	healthH *handler.HealthHandler
 	authH   *handler.AuthHandler
 	userH   *handler.UserHandler
 	parcelH *handler.ParcelHandler
+	pickupH *handler.PickupHandler
 }
 
 // BuildContainer manually wires dependencies (no DI framework).
@@ -62,6 +65,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	smsCache := repository.NewSMSCodeCache(rdb)
 	parcelRepo := repository.NewParcelRepo()
 	shelfRepo := repository.NewShelfRepo()
+	pickupRepo := repository.NewPickupLogRepo()
 
 	// Services.
 	env := os.Getenv("APP_ENV")
@@ -72,12 +76,14 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	authSvc := service.NewAuthService(userRepo, adminRepo, smsCache, sms, cfg, db)
 	userSvc := service.NewUserService(userRepo, runnerRepo, db)
 	parcelSvc := service.NewParcelService(parcelRepo, shelfRepo, userRepo, db)
+	pickupSvc := service.NewPickupService(parcelRepo, pickupRepo, shelfRepo, userRepo, db)
 
 	// Handlers.
 	healthH := handler.NewHealthHandler(db, rdb)
 	authH := handler.NewAuthHandler(authSvc)
 	userH := handler.NewUserHandler(userSvc)
 	parcelH := handler.NewParcelHandler(parcelSvc)
+	pickupH := handler.NewPickupHandler(pickupSvc)
 
 	return &Container{
 		Cfg:        cfg,
@@ -89,13 +95,16 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 		smsCache:   smsCache,
 		parcelRepo: parcelRepo,
 		shelfRepo:  shelfRepo,
+		pickupRepo: pickupRepo,
 		authSvc:    authSvc,
 		userSvc:    userSvc,
 		parcelSvc:  parcelSvc,
+		pickupSvc:  pickupSvc,
 		healthH:    healthH,
 		authH:      authH,
 		userH:      userH,
 		parcelH:    parcelH,
+		pickupH:    pickupH,
 	}, nil
 }
 
@@ -106,6 +115,7 @@ func (c *Container) Handlers() *router.Handlers {
 		Auth:   c.authH,
 		User:   c.userH,
 		Parcel: c.parcelH,
+		Pickup: c.pickupH,
 	}
 }
 
