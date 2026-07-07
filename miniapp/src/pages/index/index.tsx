@@ -7,13 +7,14 @@ import { useProxyStore } from '@/stores/useProxyStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import ParcelCard from '@/components/ParcelCard';
 import EmptyState from '@/components/EmptyState';
+import Skeleton from '@/components/Skeleton';
 import { formatAmount, timeAgo } from '@/utils/format';
 import './index.scss';
 
 export default function Index() {
   const { isLoggedIn, currentRole, userInfo } = useUserStore();
   const { myParcels, pendingCount, loading, fetchMyParcels, loadMore } = useParcelStore();
-  const { taskList, fetchTasks } = useProxyStore();
+  const { taskList, taskLoading, fetchTasks } = useProxyStore();
   const { unreadCount } = useNotificationStore();
   const [initialized, setInitialized] = useState(false);
 
@@ -86,7 +87,9 @@ export default function Index() {
           <Text className='index__section-title'>最新任务</Text>
         </View>
 
-        {taskList.length === 0 && !loading ? (
+        {taskLoading ? (
+          <Skeleton rows={2} type='card' />
+        ) : taskList.length === 0 ? (
           <EmptyState title='暂无任务' description='暂时没有待接的代取任务' />
         ) : (
           taskList.slice(0, 3).map((task) => (
@@ -121,15 +124,21 @@ export default function Index() {
         </View>
       </View>
 
-      <View className='index__stats'>
-        <View className='index__stat-item'>
-          <Text className='index__stat-num'>{pendingCount}</Text>
-          <Text className='index__stat-label'>待取件</Text>
+      {loading && myParcels.length === 0 ? (
+        <Skeleton type='stats' />
+      ) : (
+        <View className='index__stats'>
+          <View className='index__stat-item'>
+            <Text className='index__stat-num'>{pendingCount}</Text>
+            <Text className='index__stat-label'>待取件</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       <View className='index__list'>
-        {myParcels.length === 0 && !loading ? (
+        {loading && myParcels.length === 0 ? (
+          <Skeleton rows={3} type='card' />
+        ) : myParcels.length === 0 ? (
           <EmptyState title='暂无待取包裹' description='您还没有需要取的包裹' />
         ) : (
           myParcels.map((parcel) => (

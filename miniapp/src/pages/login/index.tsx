@@ -3,6 +3,7 @@ import Taro from '@tarojs/taro';
 import { useState, useCallback, useRef } from 'react';
 import { Button } from '@nutui/nutui-react-taro';
 import { useUserStore } from '@/stores/useUserStore';
+import { authApi } from '@/api/auth';
 import { isValidPhone, isValidCode } from '@/utils/validator';
 import './index.scss';
 
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [code, setCode] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [wxLoading, setWxLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -42,7 +44,7 @@ export default function LoginPage() {
       return;
     }
     try {
-      // Mock 模式下直接开始倒计时
+      await authApi.sendCode(phone);
       startCountdown();
       Taro.showToast({ title: '验证码已发送', icon: 'success' });
     } catch {
@@ -78,6 +80,26 @@ export default function LoginPage() {
     }
   };
 
+  const handleWxLogin = async () => {
+    if (!agreed) {
+      Taro.showToast({ title: '请同意用户协议', icon: 'none' });
+      return;
+    }
+
+    setWxLoading(true);
+    try {
+      // 获取微信 code
+      const loginRes = await Taro.login();
+      // TODO: 发送 code 到后端换取 openid，然后登录
+      // 现在先提示用户使用手机号登录
+      Taro.showToast({ title: '请使用手机号登录', icon: 'none' });
+    } catch {
+      Taro.showToast({ title: '微信登录失败', icon: 'none' });
+    } finally {
+      setWxLoading(false);
+    }
+  };
+
   return (
     <View className='login-page'>
       <View className='login-page__header'>
@@ -86,6 +108,15 @@ export default function LoginPage() {
       </View>
 
       <View className='login-page__form'>
+        <View className='login-page__wx-login' onClick={handleWxLogin}>
+          <Text className='login-page__wx-icon'>📱</Text>
+          <Text className='login-page__wx-text'>{wxLoading ? '登录中...' : '微信一键登录'}</Text>
+        </View>
+
+        <View className='login-page__divider'>
+          <Text className='login-page__divider-text'>或</Text>
+        </View>
+
         <View className='login-page__input-group'>
           <Text className='login-page__prefix'>+86</Text>
           <Input
