@@ -90,7 +90,7 @@ func (s *ProxyService) Publish(ctx context.Context, userID int64, parcelID int64
 		return nil, apperrors.New(apperrors.ErrProxyRewardOutOfRange, "")
 	}
 
-	dl, err := time.Parse("2006-01-02 15:04:05", deadline)
+	dl, err := time.ParseInLocation("2006-01-02 15:04:05", deadline, time.Local)
 	if err != nil {
 		return nil, apperrors.New(apperrors.ErrProxyDeadlineInvalid, "")
 	}

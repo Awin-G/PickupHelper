@@ -329,3 +329,258 @@ func TestProxy_08_MyOrders(t *testing.T) {
 	list := data["list"].([]any)
 	assert.Len(t, list, 1)
 }
+
+// PROXY-09: Task hall list → returns published tasks.
+func TestProxy_09_Tasks_List(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-TASK-001", "13800138800")
+
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 25.0,
+		"deadline":      deadline,
+	}, env.userTok)
+
+	rr := env.do(t, http.MethodGet, "/api/v1/proxy/tasks?page=1&page_size=10", nil, env.runnerTok)
+	require.Equal(t, http.StatusOK, rr.Code, "tasks body=%s", rr.Body.String())
+	b := proxyBodyMap(t, rr)
+	list := b["data"].(map[string]any)["list"].([]any)
+	assert.Len(t, list, 1)
+}
+
+// PROXY-10: Task hall filtered by station_id.
+func TestProxy_10_Tasks_ByStation(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-TASK-002", "13800138800")
+
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 30.0,
+		"deadline":      deadline,
+	}, env.userTok)
+
+	// Filter by correct station.
+	rr := env.do(t, http.MethodGet, "/api/v1/proxy/tasks?station_id="+itoa(env.stationID)+"&page=1&page_size=10", nil, env.runnerTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b := proxyBodyMap(t, rr)
+	list := b["data"].(map[string]any)["list"].([]any)
+	assert.Len(t, list, 1)
+
+	// Filter by wrong station → empty.
+	rr = env.do(t, http.MethodGet, "/api/v1/proxy/tasks?station_id=99999&page=1&page_size=10", nil, env.runnerTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b = proxyBodyMap(t, rr)
+	list = b["data"].(map[string]any)["list"].([]any)
+	assert.Len(t, list, 0)
+}
+
+// PROXY-11: Publish with invalid deadline → 400.
+func TestProxy_11_Publish_InvalidDeadline(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-DL-001", "13800138800")
+
+	// Deadline less than 30 min in future.
+	deadline := time.Now().Add(10 * time.Minute).Format("2006-01-02 15:04:05")
+	rr := env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 10.0,
+		"deadline":      deadline,
+	}, env.userTok)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	b := proxyBodyMap(t, rr)
+	assert.Equal(t, float64(10405), b["code"])
+}
+
+// PROXY-12: Duplicate publish on same parcel → 409.
+func TestProxy_12_Publish_Duplicate(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-DUP-001", "13800138800")
+
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	body := map[string]any{"parcel_id": parcelID, "reward_amount": 10.0, "deadline": deadline}
+	rr := env.do(t, http.MethodPost, "/api/v1/proxy/publish", body, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	rr = env.do(t, http.MethodPost, "/api/v1/proxy/publish", body, env.userTok)
+	assert.Equal(t, http.StatusConflict, rr.Code)
+	b := proxyBodyMap(t, rr)
+	assert.Equal(t, float64(10403), b["code"])
+}
+
+// PROXY-13: Publisher cannot accept own order → 409.
+func TestProxy_13_Accept_SelfAccept(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+
+	runnerUser := SeedUserWithStatus(t, env.env.DB, "13800138888", models.UserTypeRunner, models.RunnerStatusApproved)
+	pubRunnerTok := signParcelToken(t, env.env, runnerUser.ID, env.stationID, "user")
+
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-SELF-001", "13800138888")
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	rr := env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 10.0,
+		"deadline":      deadline,
+	}, pubRunnerTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b := proxyBodyMap(t, rr)
+	orderID := int64(b["data"].(map[string]any)["order_id"].(float64))
+
+	rr = env.do(t, http.MethodPost, "/api/v1/proxy/accept/"+itoa(orderID), nil, pubRunnerTok)
+	assert.Equal(t, http.StatusConflict, rr.Code)
+	b = proxyBodyMap(t, rr)
+	assert.Equal(t, float64(10414), b["code"])
+}
+
+// PROXY-14: Cancel order that is already completed → 409.
+func TestProxy_14_Cancel_Completed(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-CCOMP-001", "13800138800")
+
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	rr := env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 5.0,
+		"deadline":      deadline,
+	}, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b := proxyBodyMap(t, rr)
+	orderID := int64(b["data"].(map[string]any)["order_id"].(float64))
+
+	env.do(t, http.MethodPost, "/api/v1/proxy/accept/"+itoa(orderID), nil, env.runnerTok)
+	env.do(t, http.MethodPost, "/api/v1/proxy/request-delivery/"+itoa(orderID), map[string]any{
+		"delivery_photos": []string{"https://cdn/p.jpg"},
+	}, env.runnerTok)
+	env.do(t, http.MethodPost, "/api/v1/proxy/confirm-delivery/"+itoa(orderID), map[string]any{
+		"accepted": true,
+	}, env.userTok)
+
+	// Try cancelling completed order.
+	rr = env.do(t, http.MethodPost, "/api/v1/proxy/cancel", map[string]any{
+		"order_id":      orderID,
+		"cancel_reason": "late",
+	}, env.userTok)
+	assert.Equal(t, http.StatusConflict, rr.Code)
+	b = proxyBodyMap(t, rr)
+	assert.Equal(t, float64(10443), b["code"])
+}
+
+// PROXY-15: Non-taker cannot request delivery → 409.
+func TestProxy_15_Delivery_NotTaker(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-NTAKER-001", "13800138800")
+
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	rr := env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 10.0,
+		"deadline":      deadline,
+	}, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b := proxyBodyMap(t, rr)
+	orderID := int64(b["data"].(map[string]any)["order_id"].(float64))
+
+	env.do(t, http.MethodPost, "/api/v1/proxy/accept/"+itoa(orderID), nil, env.runnerTok)
+
+	// Publisher (not runner) tries to request delivery.
+	rr = env.do(t, http.MethodPost, "/api/v1/proxy/request-delivery/"+itoa(orderID), map[string]any{
+		"delivery_photos": []string{"https://cdn/p.jpg"},
+	}, env.userTok)
+	assert.Equal(t, http.StatusConflict, rr.Code)
+	b = proxyBodyMap(t, rr)
+	assert.Equal(t, float64(10421), b["code"])
+}
+
+// PROXY-16: Confirm delivery before delivery → 409.
+func TestProxy_16_Confirm_BeforeDelivery(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-CONF-001", "13800138800")
+
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	rr := env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 10.0,
+		"deadline":      deadline,
+	}, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b := proxyBodyMap(t, rr)
+	orderID := int64(b["data"].(map[string]any)["order_id"].(float64))
+
+	env.do(t, http.MethodPost, "/api/v1/proxy/accept/"+itoa(orderID), nil, env.runnerTok)
+
+	// Confirm before delivery is requested.
+	rr = env.do(t, http.MethodPost, "/api/v1/proxy/confirm-delivery/"+itoa(orderID), map[string]any{
+		"accepted": true,
+	}, env.userTok)
+	assert.Equal(t, http.StatusConflict, rr.Code)
+	b = proxyBodyMap(t, rr)
+	assert.Equal(t, float64(10432), b["code"])
+}
+
+// PROXY-17: Reject delivery without reason → 400.
+func TestProxy_17_Confirm_RejectNoReason(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-REJ-001", "13800138800")
+
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	rr := env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 10.0,
+		"deadline":      deadline,
+	}, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b := proxyBodyMap(t, rr)
+	orderID := int64(b["data"].(map[string]any)["order_id"].(float64))
+
+	env.do(t, http.MethodPost, "/api/v1/proxy/accept/"+itoa(orderID), nil, env.runnerTok)
+	env.do(t, http.MethodPost, "/api/v1/proxy/request-delivery/"+itoa(orderID), map[string]any{
+		"delivery_photos": []string{"https://cdn/p.jpg"},
+	}, env.runnerTok)
+
+	rr = env.do(t, http.MethodPost, "/api/v1/proxy/confirm-delivery/"+itoa(orderID), map[string]any{
+		"accepted": false,
+		"reason":   "",
+	}, env.userTok)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	b = proxyBodyMap(t, rr)
+	assert.Equal(t, float64(10433), b["code"])
+}
+
+// PROXY-18: My-orders filtered by status.
+func TestProxy_18_MyOrders_ByStatus(t *testing.T) {
+	env := setupProxyEngine(t)
+	adminTok := adminScanToken(t, env)
+	parcelID, _ := scanProxyParcelAdmin(t, env, adminTok, "SF-MYSTAT-001", "13800138800")
+
+	deadline := time.Now().Add(2 * time.Hour).Format("2006-01-02 15:04:05")
+	rr := env.do(t, http.MethodPost, "/api/v1/proxy/publish", map[string]any{
+		"parcel_id":     parcelID,
+		"reward_amount": 10.0,
+		"deadline":      deadline,
+	}, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	// Filter by status=1 (pending).
+	rr = env.do(t, http.MethodGet, "/api/v1/proxy/my-orders?status=1&page=1&page_size=10", nil, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b := proxyBodyMap(t, rr)
+	list := b["data"].(map[string]any)["list"].([]any)
+	assert.Len(t, list, 1)
+
+	// Filter by status=2 (delivering) → empty.
+	rr = env.do(t, http.MethodGet, "/api/v1/proxy/my-orders?status=2&page=1&page_size=10", nil, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b = proxyBodyMap(t, rr)
+	list = b["data"].(map[string]any)["list"].([]any)
+	assert.Len(t, list, 0)
+}

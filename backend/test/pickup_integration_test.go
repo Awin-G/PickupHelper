@@ -254,3 +254,73 @@ func TestPickup_08_SelfCheckout_Unauthenticated(t *testing.T) {
 	}, "")
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
+
+// PICKUP-09: Scan-station with empty codes → binding error 400.
+func TestPickup_09_ScanStation_Empty(t *testing.T) {
+	env := setupPickupEngine(t)
+
+	rr := env.do(t, http.MethodPost, "/api/v1/pickup/scan-station", map[string]any{
+		"station_qr":   "station:" + itoa(env.stationID),
+		"pickup_codes": []string{},
+	}, env.userTok)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+// PICKUP-10: Scan-station with all invalid codes → all failed.
+func TestPickup_10_ScanStation_AllInvalid(t *testing.T) {
+	env := setupPickupEngine(t)
+
+	rr := env.do(t, http.MethodPost, "/api/v1/pickup/scan-station", map[string]any{
+		"station_qr":   "station:" + itoa(env.stationID),
+		"pickup_codes": []string{"000000", "999999"},
+	}, env.userTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b := pickupBodyMap(t, rr)
+	data := b["data"].(map[string]any)
+	success := data["success"].([]any)
+	failed := data["failed"].([]any)
+	assert.Len(t, success, 0)
+	assert.Len(t, failed, 2)
+}
+
+// PICKUP-11: Get pickup logs filtered by parcel_id.
+func TestPickup_11_Logs_ByParcel(t *testing.T) {
+	env := setupPickupEngine(t)
+	code := scanParcel(t, env, "SF-LOG-FILT-001", "13900139005")
+
+	env.do(t, http.MethodPost, "/api/v1/pickup/verify", map[string]any{
+		"pickup_code":         code,
+		"verification_method": 1,
+		"station_id":          env.stationID,
+	}, env.adminTok)
+
+	// First get all logs to find the parcel_id.
+	rr := env.do(t, http.MethodGet, "/api/v1/pickup/logs?page=1&page_size=10", nil, env.adminTok)
+	b := pickupBodyMap(t, rr)
+	list := b["data"].(map[string]any)["list"].([]any)
+	require.Len(t, list, 1)
+	parcelID := int64(list[0].(map[string]any)["parcel_id"].(float64))
+
+	// Filter by parcel_id.
+	rr = env.do(t, http.MethodGet, "/api/v1/pickup/logs?parcel_id="+itoa(parcelID), nil, env.adminTok)
+	require.Equal(t, http.StatusOK, rr.Code)
+	b = pickupBodyMap(t, rr)
+	list = b["data"].(map[string]any)["list"].([]any)
+	assert.Len(t, list, 1)
+}
+
+// PICKUP-12: Scan-station with >10 codes → truncated to 10.
+func TestPickup_12_ScanStation_MoreThan10(t *testing.T) {
+	env := setupPickupEngine(t)
+	codes := make([]string, 0, 15)
+	for i := 0; i < 15; i++ {
+		code := scanParcel(t, env, "SF-BULKN-"+itoa(int64(i)), "13800138900")
+		codes = append(codes, code)
+	}
+
+	rr := env.do(t, http.MethodPost, "/api/v1/pickup/scan-station", map[string]any{
+		"station_qr":   "station:" + itoa(env.stationID),
+		"pickup_codes": codes,
+	}, env.userTok)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
