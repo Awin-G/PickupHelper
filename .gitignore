@@ -34,3 +34,12 @@ Thumbs.db
 # Build / cache
 /tmp/
 *.log
+
+# Miniapp (Taro)
+miniapp/node_modules/
+miniapp/dist/
+miniapp/deploy_versions/
+miniapp/.temp/
+miniapp/.rn_temp/
+miniapp/.swc/
+miniapp/.husky/_/
