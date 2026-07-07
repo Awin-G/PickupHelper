@@ -64,6 +64,7 @@
 - [x] request.ts - 请求封装 (Token/刷新/重试/Mock)
 - [x] auth.ts - 鉴权 API
 - [x] parcel.ts - 包裹 API
+- [x] pickup.ts - 取件核销 API
 - [x] proxy.ts - 代取 API
 - [x] notification.ts - 通知 API
 - [x] mock.ts - Mock 数据 (开发环境自动启用)
