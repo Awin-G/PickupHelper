@@ -29,10 +29,10 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   login: async (phone, code) => {
     const result = await authApi.login({ phone, code });
-    storage.set('token', result.token);
+    storage.set('token', result.access_token);
     storage.set('refresh_token', result.refresh_token);
     set({
-      token: result.token,
+      token: result.access_token,
       refreshToken: result.refresh_token,
       userInfo: result.user,
       isLoggedIn: true,
@@ -57,9 +57,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!refreshToken) return false;
     try {
       const result = await authApi.refreshToken(refreshToken);
-      storage.set('token', result.token);
-      storage.set('refresh_token', result.refresh_token);
-      set({ token: result.token, refreshToken: result.refresh_token });
+      storage.set('token', result.access_token);
+      set({ token: result.access_token });
       return true;
     } catch {
       get().logout();

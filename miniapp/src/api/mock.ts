@@ -13,13 +13,14 @@ interface RequestConfig {
 
 const mockUser: UserInfo = {
   id: 1,
-  phone: '13800001234',
+  phone: '138****1234',
   nickname: '张三',
   avatar: '',
   user_type: 2,
   runner_status: 2,
   credit_score: 100,
   is_blacklisted: false,
+  created_at: '2026-07-01T00:00:00+08:00',
 };
 
 const mockParcels: Parcel[] = [
@@ -100,11 +101,20 @@ function getParams(config: RequestConfig) {
 }
 
 export const mockRoutes: Record<string, (config: RequestConfig) => Promise<any>> = {
-  'POST /auth/send-code': async () => undefined,
-  'POST /auth/login': async () => ({ token: 'mock_token_xxx', refresh_token: 'mock_refresh_xxx', user: mockUser }),
-  'POST /auth/refresh': async () => ({ token: 'mock_token_refreshed', refresh_token: 'mock_refresh_refreshed' }),
+  'POST /auth/send-code': async () => ({ expire_in: 300 }),
+  'POST /auth/login': async () => ({
+    access_token: 'mock_access_token_xxx',
+    refresh_token: 'mock_refresh_token_xxx',
+    expires_in: 7200,
+    user: mockUser,
+    role: 'user',
+  }),
+  'POST /auth/refresh': async () => ({
+    access_token: 'mock_access_token_refreshed',
+    expires_in: 7200,
+  }),
   'GET /user/info': async () => mockUser,
-  'PUT /user/profile': async () => undefined,
+  'PUT /user/info': async () => mockUser,
   'GET /parcels/my': async (config) => {
     const p = getParams(config);
     return paginate(mockParcels, p.page || 1, p.page_size || 20);

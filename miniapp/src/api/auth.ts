@@ -4,7 +4,7 @@ import type { LoginParams, LoginResult, UserInfo } from './types';
 export const authApi = {
   /** 发送验证码 */
   sendCode: (phone: string) =>
-    request<void>({
+    request<{ expire_in: number }>({
       url: '/auth/send-code',
       method: 'POST',
       data: { phone },
@@ -20,7 +20,7 @@ export const authApi = {
 
   /** 刷新 Token */
   refreshToken: (refreshToken: string) =>
-    request<{ token: string; refresh_token: string }>({
+    request<{ access_token: string; expires_in: number }>({
       url: '/auth/refresh',
       method: 'POST',
       data: { refresh_token: refreshToken },
@@ -34,8 +34,8 @@ export const authApi = {
 
   /** 更新用户信息 */
   updateProfile: (data: Partial<UserInfo>) =>
-    request<void>({
-      url: '/user/profile',
+    request<UserInfo>({
+      url: '/user/info',
       method: 'PUT',
       data,
     }),

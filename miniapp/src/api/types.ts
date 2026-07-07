@@ -24,6 +24,7 @@ export interface UserInfo {
   runner_status: number;   // 0-未申请, 1-审核中, 2-已通过, 3-已拒绝
   credit_score: number;
   is_blacklisted: boolean;
+  created_at?: string;
 }
 
 /** 包裹 */
@@ -119,9 +120,11 @@ export interface LoginParams {
 
 /** 登录响应 */
 export interface LoginResult {
-  token: string;
+  access_token: string;
   refresh_token: string;
+  expires_in: number;
   user: UserInfo;
+  role: string;
 }
 
 /** 业务错误 */
