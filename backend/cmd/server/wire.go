@@ -41,6 +41,7 @@ type Container struct {
 	proxySvc   *service.ProxyService
 	shelfSvc   *service.ShelfService
 	notifySvc  *service.NotifyService
+	statsSvc   *service.StatsService
 
 	// Handlers.
 	healthH  *handler.HealthHandler
@@ -51,6 +52,7 @@ type Container struct {
 	proxyH   *handler.ProxyHandler
 	shelfH   *handler.ShelfHandler
 	notifyH  *handler.NotifyHandler
+	statsH   *handler.StatsHandler
 }
 
 // BuildContainer manually wires dependencies (no DI framework).
@@ -90,6 +92,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	proxySvc := service.NewProxyService(proxyRepo, parcelRepo, userRepo, db)
 	shelfSvc := service.NewShelfService(shelfRepo, db)
 	notifySvc := service.NewNotifyService(notifyRepo, db)
+	statsSvc := service.NewStatsService(db)
 
 	// Handlers.
 	healthH := handler.NewHealthHandler(db, rdb)
@@ -100,6 +103,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	proxyH := handler.NewProxyHandler(proxySvc)
 	shelfH := handler.NewShelfHandler(shelfSvc)
 	notifyH := handler.NewNotifyHandler(notifySvc)
+	statsH := handler.NewStatsHandler(statsSvc)
 
 	return &Container{
 		Cfg:        cfg,
@@ -129,6 +133,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 		proxyH:      proxyH,
 		shelfH:      shelfH,
 		notifyH:     notifyH,
+		statsH:      statsH,
 	}, nil
 }
 
@@ -143,6 +148,7 @@ func (c *Container) Handlers() *router.Handlers {
 		Proxy:  c.proxyH,
 		Shelf:  c.shelfH,
 		Notify: c.notifyH,
+		Stats:  c.statsH,
 	}
 }
 
