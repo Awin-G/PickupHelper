@@ -1,5 +1,6 @@
 import { request } from './request';
 import Taro from '@tarojs/taro';
+import { storage } from '@/utils/storage';
 import type { LoginParams, LoginResult, UserInfo } from './types';
 
 export const authApi = {
@@ -11,12 +12,25 @@ export const authApi = {
       data: { phone },
     }),
 
-  /** 登录 */
+  /** 手机号验证码登录 */
   login: (params: LoginParams) =>
     request<LoginResult>({
       url: '/auth/login',
       method: 'POST',
       data: params,
+    }),
+
+  /** 微信登录 */
+  wechatLogin: (data: {
+    code: string;
+    phone_code?: string;
+    nickname?: string;
+    avatar_url?: string;
+  }) =>
+    request<LoginResult>({
+      url: '/auth/wechat-login',
+      method: 'POST',
+      data,
     }),
 
   /** 刷新 Token */
@@ -44,8 +58,9 @@ export const authApi = {
   /** 上传头像 */
   uploadAvatar: async (filePath: string) => {
     const token = storage.get<string>('token');
+    const baseUrl = process.env.TARO_APP_API_BASE || 'http://localhost:18080/api/v1';
     const res = await Taro.uploadFile({
-      url: `${process.env.TARO_APP_API_BASE || 'http://localhost:18080/api/v1'}/user/avatar`,
+      url: `${baseUrl}/user/avatar`,
       filePath,
       name: 'file',
       header: {
@@ -59,6 +74,3 @@ export const authApi = {
     return data.data as { avatar_url: string };
   },
 };
-
-// 需要引入 storage
-import { storage } from '@/utils/storage';

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import Taro from '@tarojs/taro';
 import { storage } from '@/utils/storage';
 import { authApi } from '@/api/auth';
 import { generateNickname } from '@/utils/format';
@@ -14,6 +15,7 @@ interface UserState {
   isLoggedIn: boolean;
 
   login: (phone: string, code: string) => Promise<void>;
+  wechatLogin: (phoneCode?: string) => Promise<void>;
   logout: () => void;
   refreshAuth: () => Promise<boolean>;
   fetchUserInfo: () => Promise<void>;
@@ -34,13 +36,11 @@ export const useUserStore = create<UserState>((set, get) => ({
     storage.set('refresh_token', result.refresh_token);
 
     let user = result.user;
-    // 如果昵称为空，自动生成并设置
     if (!user.nickname) {
       const nickname = generateNickname();
       try {
         user = await authApi.updateProfile({ nickname });
       } catch {
-        // 设置失败不影响登录
         user = { ...user, nickname };
       }
     }
@@ -49,6 +49,31 @@ export const useUserStore = create<UserState>((set, get) => ({
       token: result.access_token,
       refreshToken: result.refresh_token,
       userInfo: user,
+      isLoggedIn: true,
+    });
+  },
+
+  wechatLogin: async (phoneCode?: string) => {
+    // 调用 wx.login 获取 code
+    const loginRes = await Taro.login();
+    if (!loginRes.code) {
+      throw new Error('微信登录失败');
+    }
+
+    const nickname = generateNickname();
+    const result = await authApi.wechatLogin({
+      code: loginRes.code,
+      phone_code: phoneCode,
+      nickname,
+    });
+
+    storage.set('token', result.access_token);
+    storage.set('refresh_token', result.refresh_token);
+
+    set({
+      token: result.access_token,
+      refreshToken: result.refresh_token,
+      userInfo: result.user,
       isLoggedIn: true,
     });
   },

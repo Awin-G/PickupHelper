@@ -1,4 +1,4 @@
-import { View, Text, Input } from '@tarojs/components';
+import { View, Text, Input, Button as TaroButton } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState, useCallback, useRef } from 'react';
 import { Button } from '@nutui/nutui-react-taro';
@@ -16,10 +16,8 @@ export default function LoginPage() {
   const [agreed, setAgreed] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const login = useUserStore((s) => s.login);
-  const isLoggedIn = useUserStore((s) => s.isLoggedIn);
+  const { login, wechatLogin, isLoggedIn } = useUserStore();
 
-  // 如果已登录，跳转首页
   if (isLoggedIn) {
     Taro.switchTab({ url: '/pages/index/index' });
     return null;
@@ -70,16 +68,15 @@ export default function LoginPage() {
     try {
       await login(phone, code);
       Taro.showToast({ title: '登录成功', icon: 'success' });
-      setTimeout(() => {
-        Taro.switchTab({ url: '/pages/index/index' });
-      }, 1000);
-    } catch (err) {
+      setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
+    } catch {
       Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
     } finally {
       setLoading(false);
     }
   };
 
+  // 微信一键登录（已绑定用户）
   const handleWxLogin = async () => {
     if (!agreed) {
       Taro.showToast({ title: '请同意用户协议', icon: 'none' });
@@ -88,13 +85,41 @@ export default function LoginPage() {
 
     setWxLoading(true);
     try {
-      // 获取微信 code
-      const loginRes = await Taro.login();
-      // TODO: 发送 code 到后端换取 openid，然后登录
-      // 现在先提示用户使用手机号登录
-      Taro.showToast({ title: '请使用手机号登录', icon: 'none' });
+      await wechatLogin();
+      Taro.showToast({ title: '登录成功', icon: 'success' });
+      setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
+    } catch (err: any) {
+      // 新用户需要手机号授权
+      if (err.msg && err.msg.includes('phone_code')) {
+        // 提示用户点击手机号授权按钮
+        Taro.showToast({ title: '请点击下方按钮授权手机号', icon: 'none' });
+      } else {
+        Taro.showToast({ title: '微信登录失败', icon: 'none' });
+      }
+    } finally {
+      setWxLoading(false);
+    }
+  };
+
+  // 手机号授权回调（新用户）
+  const handleGetPhoneNumber = async (e: any) => {
+    if (!agreed) {
+      Taro.showToast({ title: '请同意用户协议', icon: 'none' });
+      return;
+    }
+
+    if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+      Taro.showToast({ title: '手机号授权取消', icon: 'none' });
+      return;
+    }
+
+    setWxLoading(true);
+    try {
+      await wechatLogin(e.detail.code);
+      Taro.showToast({ title: '登录成功', icon: 'success' });
+      setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
     } catch {
-      Taro.showToast({ title: '微信登录失败', icon: 'none' });
+      Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
     } finally {
       setWxLoading(false);
     }
@@ -108,15 +133,26 @@ export default function LoginPage() {
       </View>
 
       <View className='login-page__form'>
+        {/* 微信一键登录 */}
         <View className='login-page__wx-login' onClick={handleWxLogin}>
           <Text className='login-page__wx-icon'>📱</Text>
           <Text className='login-page__wx-text'>{wxLoading ? '登录中...' : '微信一键登录'}</Text>
         </View>
 
+        {/* 新用户手机号授权按钮 */}
+        <TaroButton
+          className='login-page__wx-phone-btn'
+          open-type='getPhoneNumber'
+          onGetPhoneNumber={handleGetPhoneNumber}
+        >
+          <Text>微信手机号快捷登录</Text>
+        </TaroButton>
+
         <View className='login-page__divider'>
           <Text className='login-page__divider-text'>或</Text>
         </View>
 
+        {/* 手机号验证码登录 */}
         <View className='login-page__input-group'>
           <Text className='login-page__prefix'>+86</Text>
           <Input

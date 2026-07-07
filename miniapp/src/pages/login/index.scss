@@ -36,7 +36,7 @@
     height: 96px;
     background: #07C160;
     border-radius: 999px;
-    margin-bottom: 40px;
+    margin-bottom: 24px;
   }
 
   &__wx-icon {
@@ -47,6 +47,28 @@
     font-size: 32px;
     color: #fff;
     font-weight: 500;
+  }
+
+  &__wx-phone-btn {
+    width: 100%;
+    height: 80px;
+    background: #fff;
+    border: 1px solid #07C160;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+    padding: 0;
+
+    Text {
+      font-size: 28px;
+      color: #07C160;
+    }
+
+    &::after {
+      border: none;
+    }
   }
 
   &__divider {
