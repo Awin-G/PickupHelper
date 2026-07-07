@@ -25,6 +25,7 @@ type UserRepo interface {
 	UpdateRunnerStatus(ctx context.Context, db DBTX, id int64, userType, runnerStatus int8) error
 	SetBlacklist(ctx context.Context, db DBTX, id int64, isBlacklisted int8) error
 	UpdateOpenID(ctx context.Context, db DBTX, id int64, openid string) error
+	SaveAvatar(ctx context.Context, db DBTX, id int64, data []byte, contentType string) error
 }
 
 // AdminRepo abstracts persistence for the admins table.
@@ -77,7 +78,8 @@ func (r *mysqlUserRepo) FindByID(ctx context.Context, db DBTX, id int64) (*model
 	var u models.User
 	err := db.GetContext(ctx, &u,
 		`SELECT id, phone, nickname, avatar, openid, user_type, runner_status,
-		        credit_score, is_blacklisted, created_at, updated_at
+		        credit_score, is_blacklisted, created_at, updated_at,
+		        avatar_data, avatar_content_type
 		 FROM users WHERE id = ?`, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, sql.ErrNoRows
@@ -161,6 +163,16 @@ func (r *mysqlUserRepo) UpdateOpenID(ctx context.Context, db DBTX, id int64, ope
 		nullable(openid), id)
 	if err != nil {
 		return fmt.Errorf("user_repo.UpdateOpenID: %w", err)
+	}
+	return nil
+}
+
+func (r *mysqlUserRepo) SaveAvatar(ctx context.Context, db DBTX, id int64, data []byte, contentType string) error {
+	_, err := db.ExecContext(ctx,
+		`UPDATE users SET avatar_data = ?, avatar_content_type = ? WHERE id = ?`,
+		data, contentType, id)
+	if err != nil {
+		return fmt.Errorf("user_repo.SaveAvatar: %w", err)
 	}
 	return nil
 }

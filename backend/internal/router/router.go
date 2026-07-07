@@ -24,6 +24,7 @@ type Handlers struct {
 	Shelf  *handler.ShelfHandler
 	Notify *handler.NotifyHandler
 	Stats  *handler.StatsHandler
+	Avatar *handler.AvatarHandler
 }
 
 // Register wires the global middleware chain and application routes onto
@@ -120,6 +121,10 @@ func Register(engine *gin.Engine, cfg *config.Config, h *Handlers) {
 		statsGroup := jwtGroup.Group("/stats")
 		statsGroup.Use(middleware.AdminOnly())
 		h.Stats.RegisterStatsRoutes(statsGroup)
+	}
+
+	if h.Avatar != nil {
+		h.Avatar.RegisterAvatarRoutes(jwtGroup)
 	}
 
 	// NoRoute: enforce JWT for unmatched /api/v1/* paths.

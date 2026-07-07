@@ -22,7 +22,8 @@ type mockUserRepo struct {
 	UpdateProfileFn      func(ctx context.Context, db repository.DBTX, id int64, nickname, avatar string) error
 	UpdateRunnerStatusFn func(ctx context.Context, db repository.DBTX, id int64, userType, runnerStatus int8) error
 	SetBlacklistFn       func(ctx context.Context, db repository.DBTX, id int64, isBlacklisted int8) error
-	UpdateOpenIDFn       func(ctx context.Context, db repository.DBTX, id int64, openid string) error
+	UpdateOpenIDFn func(ctx context.Context, db repository.DBTX, id int64, openid string) error
+	SaveAvatarFn   func(ctx context.Context, db repository.DBTX, id int64, data []byte, contentType string) error
 
 	// Call records for assertions.
 	CreateCalls             []createCall
@@ -110,6 +111,13 @@ func (m *mockUserRepo) UpdateOpenID(ctx context.Context, db repository.DBTX, id 
 	m.UpdateOpenIDCalls = append(m.UpdateOpenIDCalls, updateOpenIDCall{ID: id, OpenID: openid})
 	if m.UpdateOpenIDFn != nil {
 		return m.UpdateOpenIDFn(ctx, db, id, openid)
+	}
+	return nil
+}
+
+func (m *mockUserRepo) SaveAvatar(ctx context.Context, db repository.DBTX, id int64, data []byte, contentType string) error {
+	if m.SaveAvatarFn != nil {
+		return m.SaveAvatarFn(ctx, db, id, data, contentType)
 	}
 	return nil
 }
