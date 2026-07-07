@@ -1,1 +1,3 @@
-export default definePageConfig({});
+export default definePageConfig({
+  navigationBarTitleText: '取件码',
+});
