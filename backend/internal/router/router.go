@@ -18,6 +18,7 @@ type Handlers struct {
 	Health *handler.HealthHandler
 	Auth   *handler.AuthHandler
 	User   *handler.UserHandler
+	Parcel *handler.ParcelHandler
 }
 
 // Register wires the global middleware chain and application routes onto
@@ -77,6 +78,18 @@ func Register(engine *gin.Engine, cfg *config.Config, h *Handlers) {
 		adminGroup := jwtGroup.Group("/admin")
 		adminGroup.Use(middleware.AdminOnly())
 		h.User.RegisterAdminRoutes(adminGroup)
+	}
+
+	// Parcel admin routes (JWT + AdminOnly).
+	if h.Parcel != nil {
+		parcelAdminGroup := jwtGroup.Group("/parcels")
+		parcelAdminGroup.Use(middleware.AdminOnly())
+		h.Parcel.RegisterParcelAdminRoutes(parcelAdminGroup)
+	}
+
+	// Parcel user routes (JWT only).
+	if h.Parcel != nil {
+		h.Parcel.RegisterParcelUserRoutes(jwtGroup.Group("/parcels"))
 	}
 
 	// NoRoute: enforce JWT for unmatched /api/v1/* paths.

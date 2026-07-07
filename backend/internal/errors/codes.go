@@ -59,6 +59,22 @@ const (
 	ErrAdminDisabled   = 10162 // 管理员已禁用
 
 	ErrUserNotFound = 10171 // 用户不存在
+
+	// Parcel module error codes (10201~10299) — see 详细设计文档/api详细设计.md 3.1~3.7.
+	ErrParcelDuplicate       = 10201 // 快递单号已存在（同驿站内）
+	ErrShelfNotFoundOrFull   = 10202 // 货架编号不存在或已满
+	ErrReceiverPhoneInvalid  = 10203 // 收件人手机号格式错误
+	ErrCourierCompanyInvalid = 10204 // 快递公司不在字典中
+	ErrPickupCodeGenFail     = 10205 // 取件码生成冲突重试失败
+	ErrBatchFileInvalid      = 10211 // 文件格式不支持
+	ErrBatchFileTooLarge     = 10212 // 文件过大
+	ErrBatchTemplateInvalid  = 10213 // 模板字段缺失或非法
+	ErrParcelNotFound        = 10221 // 包裹不存在
+	ErrParcelNoPermission    = 10222 // 无权查看该包裹
+	ErrParcelStatusInvalid   = 10232 // 状态流转非法
+	ErrParcelStatusReadonly  = 10233 // 目标状态不支持手工变更
+	ErrParcelNotOwner        = 10242 // 非本人包裹
+	ErrParcelNotPending      = 10243 // 包裹状态非待取
 )
 
 // HTTPStatus maps a business code to its HTTP status code.
@@ -98,6 +114,16 @@ func HTTPStatus(code int) int {
 		return http.StatusConflict
 	case ErrAppNotFound, ErrUserNotFound:
 		return http.StatusNotFound
+	// Parcel module — 10201~10243
+	case ErrParcelDuplicate, ErrParcelStatusInvalid, ErrParcelStatusReadonly, ErrParcelNotPending:
+		return http.StatusConflict
+	case ErrShelfNotFoundOrFull, ErrReceiverPhoneInvalid, ErrCourierCompanyInvalid, ErrPickupCodeGenFail,
+		ErrBatchFileInvalid, ErrBatchFileTooLarge, ErrBatchTemplateInvalid, ErrParcelNotOwner:
+		return http.StatusBadRequest
+	case ErrParcelNotFound:
+		return http.StatusNotFound
+	case ErrParcelNoPermission:
+		return http.StatusForbidden
 	default:
 		// Module-specific codes default to 500 unless they fall in a
 		// known range. Phase 2+ can refine this as needed.
@@ -174,6 +200,35 @@ func Msg(code int) string {
 		return "管理员账号已禁用"
 	case ErrUserNotFound:
 		return "用户不存在"
+	// Parcel module — 10201~10243
+	case ErrParcelDuplicate:
+		return "快递单号已存在"
+	case ErrShelfNotFoundOrFull:
+		return "货架编号不存在或已满"
+	case ErrReceiverPhoneInvalid:
+		return "收件人手机号格式错误"
+	case ErrCourierCompanyInvalid:
+		return "快递公司不在字典中"
+	case ErrPickupCodeGenFail:
+		return "取件码生成失败"
+	case ErrBatchFileInvalid:
+		return "文件格式不支持"
+	case ErrBatchFileTooLarge:
+		return "文件过大"
+	case ErrBatchTemplateInvalid:
+		return "模板字段缺失或非法"
+	case ErrParcelNotFound:
+		return "包裹不存在"
+	case ErrParcelNoPermission:
+		return "无权查看该包裹"
+	case ErrParcelStatusInvalid:
+		return "状态流转非法"
+	case ErrParcelStatusReadonly:
+		return "目标状态不支持手工变更"
+	case ErrParcelNotOwner:
+		return "非本人包裹"
+	case ErrParcelNotPending:
+		return "包裹状态非待取"
 	default:
 		return "未知错误"
 	}

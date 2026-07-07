@@ -27,15 +27,19 @@ type Container struct {
 	adminRepo  repository.AdminRepo
 	runnerRepo repository.RunnerAppRepo
 	smsCache   repository.SMSCodeCache
+	parcelRepo repository.ParcelRepo
+	shelfRepo  repository.ShelfRepo
 
 	// Services.
-	authSvc *service.AuthService
-	userSvc *service.UserService
+	authSvc   *service.AuthService
+	userSvc   *service.UserService
+	parcelSvc *service.ParcelService
 
 	// Handlers.
 	healthH *handler.HealthHandler
 	authH   *handler.AuthHandler
 	userH   *handler.UserHandler
+	parcelH *handler.ParcelHandler
 }
 
 // BuildContainer manually wires dependencies (no DI framework).
@@ -56,6 +60,8 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	adminRepo := repository.NewAdminRepo()
 	runnerRepo := repository.NewRunnerAppRepo()
 	smsCache := repository.NewSMSCodeCache(rdb)
+	parcelRepo := repository.NewParcelRepo()
+	shelfRepo := repository.NewShelfRepo()
 
 	// Services.
 	env := os.Getenv("APP_ENV")
@@ -65,11 +71,13 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	sms := service.NewSMSProvider(env, slog.Default())
 	authSvc := service.NewAuthService(userRepo, adminRepo, smsCache, sms, cfg, db)
 	userSvc := service.NewUserService(userRepo, runnerRepo, db)
+	parcelSvc := service.NewParcelService(parcelRepo, shelfRepo, userRepo, db)
 
 	// Handlers.
 	healthH := handler.NewHealthHandler(db, rdb)
 	authH := handler.NewAuthHandler(authSvc)
 	userH := handler.NewUserHandler(userSvc)
+	parcelH := handler.NewParcelHandler(parcelSvc)
 
 	return &Container{
 		Cfg:        cfg,
@@ -79,11 +87,15 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 		adminRepo:  adminRepo,
 		runnerRepo: runnerRepo,
 		smsCache:   smsCache,
+		parcelRepo: parcelRepo,
+		shelfRepo:  shelfRepo,
 		authSvc:    authSvc,
 		userSvc:    userSvc,
+		parcelSvc:  parcelSvc,
 		healthH:    healthH,
 		authH:      authH,
 		userH:      userH,
+		parcelH:    parcelH,
 	}, nil
 }
 
@@ -93,6 +105,7 @@ func (c *Container) Handlers() *router.Handlers {
 		Health: c.healthH,
 		Auth:   c.authH,
 		User:   c.userH,
+		Parcel: c.parcelH,
 	}
 }
 
