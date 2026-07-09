@@ -1,0 +1,45 @@
+server:
+  port: 18080
+  read_timeout: 15s
+  write_timeout: 15s
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: ""
+  database: pickup_helper
+  max_open_conns: 50
+  max_idle_conns: 10
+  conn_max_lifetime: 300s
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 50
+
+jwt:
+  access_secret: "prod-access-7xK9mP2qR5vL8nW1"
+  refresh_secret: "prod-refresh-3jF6hD9sA2cV4bN0"
+  access_ttl: 2h
+  refresh_ttl: 168h
+  issuer: pickup-helper
+
+log:
+  level: info
+  format: json
+
+rate_limit:
+  qps: 100
+  burst: 200
+
+cors:
+  allowed_origins:
+    - "https://pickup.awin-x.top"
+    - "http://localhost:5173"
+
+wechat:
+  app_id: "wx6292c3921041336f"
+  app_secret: "6dda4b7c2ad196e5ed50a6f0ccff590c"
