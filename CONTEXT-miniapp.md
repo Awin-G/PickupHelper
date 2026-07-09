@@ -141,18 +141,41 @@ npx miniprogram-ci upload \
 4. **密钥文件**在 `~/.config/private.wxdf3eff7d0ee24324.key`
 5. **后端地址**: `https://pickup.awin-x.top`
 
-## Git 提交规范
+## Git 工作流（必读）
+
+### 分支模型
 
 ```
-feat: 新功能
-fix: 修复
-docs: 文档
-style: 样式
-refactor: 重构
-test: 测试
-chore: 构建/工具
-debug: 调试代码（上线前移除）
+master                                # 生产分支（只含 merge commit，禁止直接提交）
+  ├── backend                         # 后端集成分支
+  ├── feature/admin-frontend-design   # 管理端前端开发分支
+  └── feature/miniapp-design          # 小程序开发分支（本分支）
 ```
+
+### 合并策略（必须遵守）
+
+- **永远使用 `merge`，禁止 `rebase`**。任何分支合入另一个分支时，必须保留 merge commit（`git merge`，不要 `--squash` 也不要 `--rebase`）。
+- 分叉时，用 `git merge`（而非 `git pull --rebase`）合并远程变更，保留 merge commit 以维持历史拓扑完整。
+- 目的：merge commit 明确记录了"哪个分支在何时以何种方式合入"，`git log --graph --oneline` 可以一眼看出各分支之间的关系和各版本来源。rebase 会把分支历史压成一条直线，销毁了分支拓扑信息，导致无法追踪问题出自哪个分支。
+
+### master 分支保护规则（必须遵守）
+
+- **`master` 分支上禁止任何直接提交**（包括代码、文档、配置修改等一切变更）。`master` 只允许存在 merge commit，即只能从开发分支合入。
+- 所有修改（包括本文档的更新）必须在本分支上完成并提交，然后 merge 到 `master`。
+- 最终效果：`git log --oneline --graph master` 看到的应全部是 merge commit，开发分支的所有实际提交都在各自分支线上。
+
+### 提交规则
+
+| 前缀 | 用途 | 示例 |
+|------|------|------|
+| `feat:` | 新功能 | `feat: 添加订阅消息授权` |
+| `fix:` | 修复 | `fix: 修复扫码枪输入` |
+| `docs:` | 文档 | `docs: 更新 CONTEXT-miniapp.md` |
+| `style:` | 样式 | `style: 调整包裹卡片间距` |
+| `refactor:` | 重构 | `refactor: 提取 ParcelStatus 组件` |
+| `test:` | 测试 | `test: 添加登录页测试` |
+| `chore:` | 构建/工具 | `chore: 升级 Taro 版本` |
+| `debug:` | 调试代码 | `debug: 接单流程日志（上线前移除）` |
 
 ## 相关文档
 
