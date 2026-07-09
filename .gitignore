@@ -13,6 +13,9 @@ CONTEXT.md
 .DS_Store
 Thumbs.db
 
+# ----- Office lock files -----
+**/.~lock.*#
+
 # ----- Secrets / Local env (root level) -----
 .env
 .env.local
@@ -34,6 +37,15 @@ go.work.sum
 /cmd/**/*.test
 /internal/**/*.test
 
+# Backend specific
+/backend/bin/
+/backend/vendor/
+/backend/.env
+/backend/.env.local
+/backend/*.local
+/backend/tmp/
+/backend/*.log
+
 # ----- Build / Cache (root level) -----
 /tmp/
 *.log
@@ -54,4 +66,3 @@ miniapp/.stylelintcache
 
 # ----- Husky internal -----
 miniapp/.husky/_
-backend/bin/

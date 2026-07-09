@@ -96,10 +96,11 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	notifySvc := service.NewNotifyService(notifyRepo, db)
 	statsSvc := service.NewStatsService(db)
 	avatarSvc := service.NewAvatarService(userRepo, db)
+	wechatSvc := service.NewWechatService(cfg.Wechat.AppID, cfg.Wechat.AppSecret)
 
 	// Handlers.
 	healthH := handler.NewHealthHandler(db, rdb)
-	authH := handler.NewAuthHandler(authSvc)
+	authH := handler.NewAuthHandler(authSvc, wechatSvc)
 	userH := handler.NewUserHandler(userSvc)
 	parcelH := handler.NewParcelHandler(parcelSvc)
 	pickupH := handler.NewPickupHandler(pickupSvc)

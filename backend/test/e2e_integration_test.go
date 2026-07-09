@@ -74,7 +74,7 @@ func setupE2EEngine(t *testing.T) *e2eTestEnv {
 	runnerTok := signParcelToken(t, env, runnerID, 0, "user")
 
 	healthH := handler.NewHealthHandler(env.DB, env.Rdb)
-	authH := handler.NewAuthHandler(authSvc)
+	authH := handler.NewAuthHandler(authSvc, nil)
 	userH := handler.NewUserHandler(userSvc)
 	parcelH := handler.NewParcelHandler(parcelSvc)
 	pickupH := handler.NewPickupHandler(pickupSvc)

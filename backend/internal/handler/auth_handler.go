@@ -1,6 +1,7 @@
 package handler
 
 import (
+	apperrors "pickup-helper/internal/errors"
 	"pickup-helper/internal/middleware"
 	"pickup-helper/internal/service"
 
@@ -8,15 +9,13 @@ import (
 )
 
 // AuthHandler exposes the User module's authentication endpoints.
-// All routes are public (no JWT required) — admin login is also public
-// because the caller has not yet authenticated.
 type AuthHandler struct {
-	authSvc *service.AuthService
+	authSvc   *service.AuthService
+	wechatSvc *service.WechatService
 }
 
-// NewAuthHandler wires the handler with its AuthService dependency.
-func NewAuthHandler(as *service.AuthService) *AuthHandler {
-	return &AuthHandler{authSvc: as}
+func NewAuthHandler(as *service.AuthService, ws *service.WechatService) *AuthHandler {
+	return &AuthHandler{authSvc: as, wechatSvc: ws}
 }
 
 // SendCodeRequest is the body for POST /auth/send-code.
@@ -104,12 +103,61 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 	Success(c, res)
 }
 
+// WechatLoginRequest is the body for POST /auth/wechat-login.
+type WechatLoginRequest struct {
+	Code      string `json:"code" binding:"required,max=128"`
+	PhoneCode string `json:"phone_code" binding:"omitempty,max=128"`
+	Nickname  string `json:"nickname" binding:"omitempty,max=50"`
+	AvatarURL string `json:"avatar_url" binding:"omitempty,max=500"`
+}
+
+// WechatLogin handles POST /auth/wechat-login.
+func (h *AuthHandler) WechatLogin(c *gin.Context) {
+	var req WechatLoginRequest
+	if !middleware.BindAndValidate(c, &req) {
+		return
+	}
+
+	openid, _, err := h.wechatSvc.Code2Session(c.Request.Context(), req.Code)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+
+	// Try login by openid first.
+	res, err := h.authSvc.LoginByOpenID(c.Request.Context(), openid)
+	if err == nil {
+		Success(c, res)
+		return
+	}
+
+	// New user: phone_code is required.
+	if req.PhoneCode == "" {
+		Error(c, apperrors.New(apperrors.ErrInvalidParam, "首次登录需要 phone_code"))
+		return
+	}
+
+	phone, err := h.wechatSvc.GetPhoneNumber(c.Request.Context(), req.PhoneCode)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+
+	res, err = h.authSvc.RegisterByWechat(c.Request.Context(), openid, phone, req.Nickname, req.AvatarURL)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, res)
+}
+
 // RegisterPublicRoutes mounts /auth/send-code, /auth/login, /auth/refresh
 // on the given public group (no JWT middleware).
 func (h *AuthHandler) RegisterPublicRoutes(g *gin.RouterGroup) {
 	g.POST("/send-code", h.SendCode)
 	g.POST("/login", h.Login)
 	g.POST("/refresh", h.Refresh)
+	g.POST("/wechat-login", h.WechatLogin)
 }
 
 // RegisterAdminAuthRoutes mounts /admin/auth/login on the given public

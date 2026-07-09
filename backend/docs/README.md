@@ -574,3 +574,32 @@ go test -tags=integration -run TestParcel_01 ./test/ -v
 | 409 | 10005, 10141, 10201, 10232, 10403, 10412, 10501 | 状态冲突 |
 | 429 | 10006 | 频率超限 |
 | 500 | 10009, 99999 | 服务端内部错误 |
+
+---
+
+## 10. 集成服务说明
+
+### 10.1 微信小程序登录
+
+**前提条件：微信小程序必须完成企业认证（非个人主体）。** 个人主体小程序调用 `jscode2session` 会返回 `-1 系统错误` 或权限拒绝。
+
+- 端点：`POST /api/v1/auth/wechat-login`
+- 流程：`wx.login()` code → 后端 code2session 换取 openid → 查数据库 → 老用户签发 JWT / 新用户注册
+- 首次登录通过 `<button open-type="getPhoneNumber">` 获取手机号自动注册
+- 手机号验证码登录 (`POST /api/v1/auth/login`) 保留，供网页端使用
+
+### 10.2 短信验证码
+
+当前为 Stub 实现（`service/sms_stub.go`），dev/test 环境固定返回 `123456`，生产环境生成随机 6 位数字通过日志打印。
+
+**接入腾讯云 SMS 需提供：**
+
+| 配置项 | 说明 | 示例 |
+|--------|------|------|
+| `SecretId` | 腾讯云 API 密钥 ID | `AKIDxxxxxxxx` |
+| `SecretKey` | 腾讯云 API 密钥 Key | `xxxxxxxx` |
+| `SmsSdkAppId` | SMS 应用 ID | `1400xxxxxx` |
+| `SignName` | 短信签名（需审核通过） | `驿站助手` |
+| `TemplateId` | 短信模板 ID（需审核通过） | `1234567` |
+
+接入后替换 `sms_stub.go` 中的 `SMSProvider` 实现即可，不影响调用方代码。
