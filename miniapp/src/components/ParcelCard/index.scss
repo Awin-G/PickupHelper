@@ -1,0 +1,74 @@
+@import '../../styles/variables';
+
+.parcel-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  &__company {
+    font-size: 32px;
+    font-weight: 600;
+    color: $color-text-primary;
+  }
+
+  &__body {
+    margin-bottom: 20px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__label {
+    font-size: 24px;
+    color: $color-text-secondary;
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  &__value {
+    font-size: 24px;
+    color: $color-text-primary;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    padding-top: 20px;
+    border-top: 1px solid $color-border;
+  }
+
+  &__btn {
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-size: 24px;
+
+    &--primary {
+      background: $color-primary;
+      color: #fff;
+    }
+
+    &--default {
+      background: #fff;
+      color: $color-primary;
+      border: 1px solid $color-primary;
+    }
+  }
+}

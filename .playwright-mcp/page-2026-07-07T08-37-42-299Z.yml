@@ -1,0 +1,15 @@
+- generic [ref=e25]:
+  - generic [ref=e26]:
+    - generic [ref=e27]: 快递驿站助手
+    - generic [ref=e28]: 便捷取件，轻松代取
+  - generic [ref=e29]:
+    - generic [ref=e30]:
+      - generic [ref=e31]: "+86"
+      - spinbutton [ref=e33]: "13800001234"
+    - generic [ref=e34]:
+      - spinbutton [ref=e36]: "123456"
+      - generic [ref=e38]: 获取验证码
+    - generic [ref=e41]: 登 录
+    - generic [ref=e42]:
+      - generic [ref=e45]: ✓
+      - generic [ref=e44]: 已阅读并同意《用户协议》和《隐私政策》

@@ -1,0 +1,71 @@
+@import '../../../styles/variables';
+
+.proxy-orders {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding: 24px;
+
+  &__tabs {
+    display: flex;
+    background: #fff;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__tab {
+    flex: 1;
+    padding: 24px;
+    text-align: center;
+    font-size: 28px;
+    color: $color-text-secondary;
+
+    &--active {
+      background: $color-primary;
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+
+  &__list {
+    padding-bottom: 40px;
+  }
+
+  &__card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  &__reward {
+    font-size: 36px;
+    font-weight: 700;
+    color: $color-danger;
+  }
+
+  &__card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__station {
+    font-size: 26px;
+    color: $color-text-secondary;
+  }
+
+  &__time {
+    font-size: 22px;
+    color: $color-text-placeholder;
+  }
+}

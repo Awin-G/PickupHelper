@@ -1,0 +1,12 @@
+- generic [ref=e2]:
+  - generic [ref=e10]:
+    - generic [ref=e11]: 请先登录
+    - generic [ref=e12]: 登录后查看您的包裹
+    - generic [ref=e15]: 去登录
+  - generic [ref=e17]:
+    - link "包裹" [ref=e18] [cursor=pointer]:
+      - /url: javascript:;
+      - paragraph [ref=e20]: 包裹
+    - link "我的" [ref=e21] [cursor=pointer]:
+      - /url: javascript:;
+      - paragraph [ref=e23]: 我的

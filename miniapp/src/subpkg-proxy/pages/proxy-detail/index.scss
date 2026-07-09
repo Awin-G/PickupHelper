@@ -1,0 +1,71 @@
+@import '../../../styles/variables';
+
+.proxy-detail {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding: 24px;
+
+  &__header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 32px;
+    padding: 24px 0;
+  }
+
+  &__card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__row {
+    display: flex;
+    align-items: flex-start;
+    padding: 16px 0;
+    border-bottom: 1px solid $color-border;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__label {
+    width: 160px;
+    font-size: 28px;
+    color: $color-text-secondary;
+    flex-shrink: 0;
+  }
+
+  &__value {
+    flex: 1;
+    font-size: 28px;
+    color: $color-text-primary;
+
+    &--reward {
+      font-size: 36px;
+      font-weight: 700;
+      color: $color-danger;
+    }
+
+    &--code {
+      font-size: 36px;
+      font-weight: 700;
+      color: $color-primary;
+      letter-spacing: 8px;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  &__btn--outline {
+    background: #fff;
+    color: $color-danger;
+    border: 1px solid $color-danger;
+  }
+}
