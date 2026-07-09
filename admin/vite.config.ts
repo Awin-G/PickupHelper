@@ -26,8 +26,9 @@ export default async ({ mode }: ConfigEnv): Promise<UserConfigExport> => {
       // 本地跨域代理 https://cn.vitejs.dev/config/server-options.html#server-proxy
       proxy: {
         "/api": {
-          target: "http://localhost:8080",
-          changeOrigin: true
+          target: "https://pickup.awin-x.top",
+          changeOrigin: true,
+          secure: false
         }
       },
       // 预热文件以提前转换和缓存结果，降低启动期间的初始页面加载时长并防止转换瀑布

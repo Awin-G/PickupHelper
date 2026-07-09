@@ -3,42 +3,62 @@ import { defineFakeRoute } from "vite-plugin-fake-server/client";
 
 export default defineFakeRoute([
   {
-    url: "/login",
+    url: "/api/v1/auth/login",
     method: "post",
     response: ({ body }) => {
       if (body.username === "admin") {
         return {
           code: 0,
-          message: "操作成功",
+          message: "success",
           data: {
-            avatar: "https://avatars.githubusercontent.com/u/44761321",
-            username: "admin",
-            nickname: "小铭",
-            // 一个用户可能有多个角色
-            roles: ["admin"],
-            // 按钮级别权限
-            permissions: ["*:*:*"],
             accessToken: "eyJhbGciOiJIUzUxMiJ9.admin",
             refreshToken: "eyJhbGciOiJIUzUxMiJ9.adminRefresh",
-            expires: "2030/10/30 00:00:00"
+            expires: "2030/12/31 23:59:59",
+            avatar: "https://avatars.githubusercontent.com/u/44761321",
+            username: "admin",
+            nickname: "系统管理员",
+            roles: ["admin"],
+            permissions: ["*:*:*"]
           }
         };
       } else {
         return {
-          code: 0,
-          message: "操作成功",
-          data: {
-            avatar: "https://avatars.githubusercontent.com/u/52823142",
-            username: "common",
-            nickname: "小林",
-            roles: ["common"],
-            permissions: ["permission:btn:add", "permission:btn:edit"],
-            accessToken: "eyJhbGciOiJIUzUxMiJ9.common",
-            refreshToken: "eyJhbGciOiJIUzUxMiJ9.commonRefresh",
-            expires: "2030/10/30 00:00:00"
-          }
+          code: 10001,
+          message: "用户名或密码错误"
         };
       }
     }
+  },
+  {
+    url: "/api/v1/auth/refresh",
+    method: "post",
+    response: () => ({
+      code: 0,
+      message: "success",
+      data: {
+        access_token: "eyJhbGciOiJIUzUxMiJ9.admin",
+        expires_in: 7200
+      }
+    })
+  },
+  {
+    url: "/api/v1/user/info",
+    method: "get",
+    response: () => ({
+      code: 0,
+      message: "success",
+      data: {
+        id: 1,
+        phone: "138****0000",
+        nickname: "系统管理员",
+        avatar: "https://avatars.githubusercontent.com/u/44761321",
+        user_type: 1,
+        runner_status: 0,
+        credit_score: 100,
+        is_blacklisted: false,
+        station_id: null,
+        created_at: "2026-01-01T00:00:00+08:00"
+      }
+    })
   }
 ]);
