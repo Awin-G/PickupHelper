@@ -1,11 +1,13 @@
 import { View, Text, Input, Button as TaroButton } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Button } from '@nutui/nutui-react-taro';
 import { useUserStore } from '@/stores/useUserStore';
 import { authApi } from '@/api/auth';
 import { generateNickname } from '@/utils/format';
 import { isValidPhone, isValidCode } from '@/utils/validator';
+import { ENABLE_WECHAT_LOGIN } from '@/config';
+import { storage } from '@/utils/storage';
 import './index.scss';
 
 export default function LoginPage() {
@@ -19,21 +21,17 @@ export default function LoginPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { login, isLoggedIn } = useUserStore();
-  const { setToken, setUserInfo } = useUserStore.getState();
-
-  // 提前获取 wx.login code
-  useEffect(() => {
-    Taro.login().then((res) => {
-      if (res.code) {
-        console.log('预获取 wx.login code:', res.code);
-        setWxCode(res.code);
-      }
-    });
-  }, []);
 
   if (isLoggedIn) {
     Taro.switchTab({ url: '/pages/index/index' });
     return null;
+  }
+
+  // 提前获取 wx.login code（仅微信登录启用时）
+  if (ENABLE_WECHAT_LOGIN && !wxCode) {
+    Taro.login().then((res) => {
+      if (res.code) setWxCode(res.code);
+    });
   }
 
   const startCountdown = useCallback(() => {
@@ -91,23 +89,17 @@ export default function LoginPage() {
 
   // 微信手机号授权回调
   const handleGetPhoneNumber = async (e: any) => {
-    console.log('getPhoneNumber 回调:', e.detail);
-
     if (!agreed) {
       Taro.showToast({ title: '请同意用户协议', icon: 'none' });
       return;
     }
 
     if (e.detail.errMsg !== 'getPhoneNumber:ok') {
-      console.log('授权失败:', e.detail.errMsg);
       Taro.showToast({ title: '手机号授权取消', icon: 'none' });
       return;
     }
 
     const phoneCode = e.detail.code;
-    console.log('获取到 phone_code:', phoneCode);
-    console.log('使用 wxCode:', wxCode);
-
     if (!phoneCode) {
       Taro.showToast({ title: '获取手机号失败', icon: 'none' });
       return;
@@ -115,7 +107,6 @@ export default function LoginPage() {
 
     if (!wxCode) {
       Taro.showToast({ title: '微信登录凭证获取中，请稍后重试', icon: 'none' });
-      // 重新获取 code
       Taro.login().then((res) => {
         if (res.code) setWxCode(res.code);
       });
@@ -143,9 +134,7 @@ export default function LoginPage() {
       Taro.showToast({ title: '登录成功', icon: 'success' });
       setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
     } catch (err: any) {
-      console.error('微信登录失败:', err);
-      Taro.showToast({ title: `登录失败: ${err.msg || err.message || '未知错误'}`, icon: 'none', duration: 3000 });
-      // 登录失败后重新获取 code
+      Taro.showToast({ title: `登录失败: ${err.msg || '未知错误'}`, icon: 'none', duration: 3000 });
       Taro.login().then((res) => {
         if (res.code) setWxCode(res.code);
       });
@@ -162,19 +151,23 @@ export default function LoginPage() {
       </View>
 
       <View className='login-page__form'>
-        {/* 微信手机号授权登录 */}
-        <TaroButton
-          className='login-page__wx-phone-btn'
-          open-type='getPhoneNumber'
-          onGetPhoneNumber={handleGetPhoneNumber}
-        >
-          <Text className='login-page__wx-icon'>📱</Text>
-          <Text className='login-page__wx-text'>{wxLoading ? '登录中...' : '微信手机号快捷登录'}</Text>
-        </TaroButton>
+        {/* 微信手机号授权登录（仅企业主体小程序可用） */}
+        {ENABLE_WECHAT_LOGIN && (
+          <TaroButton
+            className='login-page__wx-phone-btn'
+            open-type='getPhoneNumber'
+            onGetPhoneNumber={handleGetPhoneNumber}
+          >
+            <Text className='login-page__wx-icon'>📱</Text>
+            <Text className='login-page__wx-text'>{wxLoading ? '登录中...' : '微信手机号快捷登录'}</Text>
+          </TaroButton>
+        )}
 
-        <View className='login-page__divider'>
-          <Text className='login-page__divider-text'>或</Text>
-        </View>
+        {ENABLE_WECHAT_LOGIN && (
+          <View className='login-page__divider'>
+            <Text className='login-page__divider-text'>或</Text>
+          </View>
+        )}
 
         {/* 手机号验证码登录 */}
         <View className='login-page__input-group'>

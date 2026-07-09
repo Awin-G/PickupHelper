@@ -1,0 +1,29 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: 你好，张三
+        - generic [ref=e12]:
+          - generic [ref=e13]: 🔔
+          - generic [ref=e15]: "2"
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: 📋
+          - generic [ref=e19]: 任务大厅
+        - generic [ref=e165]:
+          - generic [ref=e166]: 📦
+          - generic [ref=e167]: 我的订单
+      - generic [ref=e168]: 最新任务
+      - generic [ref=e169]:
+        - generic [ref=e170]: 暂无任务
+        - generic [ref=e171]: 暂时没有待接的代取任务
+    - generic [ref=e97]:
+      - link "包裹" [ref=e98] [cursor=pointer]:
+        - /url: javascript:;
+        - paragraph [ref=e100]: 包裹
+      - link "我的" [ref=e101] [cursor=pointer]:
+        - /url: javascript:;
+        - paragraph [ref=e103]: 我的
+  - generic [ref=e172]:
+    - paragraph [ref=e173]
+    - paragraph [ref=e174]: 已切换为跑腿员模式

@@ -1,0 +1,16 @@
+- generic [ref=e181]:
+  - generic [ref=e183]: 取件码
+  - generic [ref=e186]: QR
+  - generic [ref=e187]:
+    - generic [ref=e189]: "3"
+    - generic [ref=e191]: "8"
+    - generic [ref=e193]: "2"
+    - generic [ref=e195]: "9"
+    - generic [ref=e197]: "1"
+    - generic [ref=e199]: "6"
+  - generic [ref=e201]:
+    - generic [ref=e202]: 有效期至
+    - generic [ref=e203]: 2026-07-12
+  - generic [ref=e204]:
+    - generic [ref=e205]: 请出示此码给驿站工作人员核验
+    - generic [ref=e206]: 出库后取件码自动失效

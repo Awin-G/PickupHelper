@@ -1,0 +1,18 @@
+- generic [ref=e2]:
+  - generic [ref=e55]:
+    - generic [ref=e56]:
+      - generic [ref=e57]: 你好，
+      - generic [ref=e59]: 🔔
+    - generic [ref=e61]:
+      - generic [ref=e62]: "0"
+      - generic [ref=e63]: 待取件
+    - generic [ref=e65]:
+      - generic [ref=e66]: 暂无待取包裹
+      - generic [ref=e67]: 您还没有需要取的包裹
+  - generic [ref=e17]:
+    - link "包裹" [ref=e18] [cursor=pointer]:
+      - /url: javascript:;
+      - paragraph [ref=e20]: 包裹
+    - link "我的" [ref=e21] [cursor=pointer]:
+      - /url: javascript:;
+      - paragraph [ref=e23]: 我的

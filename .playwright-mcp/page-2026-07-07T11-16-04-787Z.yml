@@ -1,0 +1,26 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: 自助出库
+        - generic [ref=e9]: 扫描驿站二维码或输入取件码完成出库
+        - spinbutton [ref=e12]
+        - generic [ref=e14]: 或
+        - generic [ref=e16]: 扫描驿站二维码
+      - generic [ref=e18]: 确认出库
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]: 你好，张三
+        - generic [ref=e26]:
+          - generic [ref=e27]: 🔔
+          - generic [ref=e29]: "2"
+      - generic [ref=e31]:
+        - generic [ref=e32]: "3"
+        - generic [ref=e33]: 待取件
+  - generic [ref=e36]:
+    - link "包裹" [ref=e37] [cursor=pointer]:
+      - /url: javascript:;
+      - paragraph [ref=e39]: 包裹
+    - link "我的" [ref=e40] [cursor=pointer]:
+      - /url: javascript:;
+      - paragraph [ref=e42]: 我的
