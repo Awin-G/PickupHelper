@@ -50,7 +50,7 @@ const loadShelves = async () => {
   if (!props.stationId) return;
   try {
     const res = await getShelfList({ station_id: props.stationId });
-    shelves.value = res.list;
+    shelves.value = res.data.list;
   } catch {
     shelves.value = [];
   }

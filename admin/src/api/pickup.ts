@@ -3,12 +3,13 @@ import type {
   PickupVerifyRequest,
   PickupVerifyResponse,
   PickupLogItem,
-  PaginatedList
+  ApiResponse,
+  PagedResponse
 } from "./types/parcel";
 
 /** 核销取件 */
 export const verifyPickup = (data: PickupVerifyRequest) => {
-  return http.request<PickupVerifyResponse>("post", "/pickup/verify", { data });
+  return http.request<ApiResponse<PickupVerifyResponse>>("post", "/pickup/verify", { data });
 };
 
 /** 取件日志查询 */
@@ -21,7 +22,7 @@ export const getPickupLogs = (params?: {
   page?: number;
   page_size?: number;
 }) => {
-  return http.request<PaginatedList<PickupLogItem>>("get", "/pickup/logs", {
+  return http.request<PagedResponse<PickupLogItem>>("get", "/pickup/logs", {
     params
   });
 };

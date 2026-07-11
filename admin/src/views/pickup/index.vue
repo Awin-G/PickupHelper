@@ -39,7 +39,7 @@ const handleVerify = async (formEl: FormInstance | undefined) => {
     try {
       form.verification_method = mode.value === "scan" ? 1 : 2;
       const res = await verifyPickup(form);
-      verifyResult.value = res;
+      verifyResult.value = res.data;
       message("核销成功", { type: "success" });
       form.pickup_code = "";
       formRef.value?.resetFields();
@@ -56,7 +56,7 @@ const loadLogs = async () => {
   logsLoading.value = true;
   try {
     const res = await getPickupLogs({ page: 1, page_size: 10 });
-    logs.value = res.list;
+    logs.value = res.data.list;
   } catch {
     // 忽略错误
   } finally {

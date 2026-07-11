@@ -43,8 +43,8 @@ const loadData = async () => {
   loading.value = true;
   try {
     const res = await getProxyOrders(queryParams);
-    tableData.value = res.list;
-    total.value = res.total;
+    tableData.value = res.data.list;
+    total.value = res.data.total;
   } catch {
     message("加载失败", { type: "error" });
   } finally {

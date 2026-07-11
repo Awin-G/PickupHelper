@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
-import { debounce } from "@pureadmin/utils";
+import { debounce, storageLocal } from "@pureadmin/utils";
 import { useNav } from "@/layout/hooks/useNav";
 import type { FormInstance } from "element-plus";
 import { useUserStoreHook } from "@/store/modules/user";
@@ -43,6 +43,8 @@ const onLogin = async (formEl: FormInstance | undefined) => {
   await formEl.validate(valid => {
     if (valid) {
       loading.value = true;
+      const key = "async-routes";
+      const needReload = !storageLocal().getItem(key);
       useUserStoreHook()
         .loginByUsername({
           username: ruleForm.username,
@@ -51,9 +53,16 @@ const onLogin = async (formEl: FormInstance | undefined) => {
         .then(async () => {
           await initRouter();
           disabled.value = true;
-          router.push(getTopMenu(true).path).then(() => {
-            message("登录成功", { type: "success" });
-          });
+          if (needReload) {
+            router.push(getTopMenu(true).path).then(() => {
+              message("登录成功", { type: "success" });
+              setTimeout(() => location.reload(), 800);
+            });
+          } else {
+            router.push(getTopMenu(true).path).then(() => {
+              message("登录成功", { type: "success" });
+            });
+          }
         })
         .catch(_err => {
           message("登录失败", { type: "error" });

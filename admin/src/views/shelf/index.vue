@@ -50,8 +50,8 @@ const loadData = async () => {
   loading.value = true;
   try {
     const res = await getShelfList(queryParams);
-    tableData.value = res.list;
-    total.value = res.total;
+    tableData.value = res.data.list;
+    total.value = res.data.total;
   } catch {
     message("加载失败", { type: "error" });
   } finally {
@@ -62,7 +62,7 @@ const loadData = async () => {
 const loadOccupancy = async () => {
   try {
     const res = await getShelfOccupancy({ station_id: queryParams.station_id || 1 });
-    occupancyData.value = res;
+    occupancyData.value = res.data;
   } catch {
     // 忽略
   }

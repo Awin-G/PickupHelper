@@ -1,10 +1,20 @@
-/** 通用分页响应 */
+/** API统一响应包装 */
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+}
+
+/** 通用分页数据 */
 export interface PaginatedList<T> {
   list: T[];
   total: number;
   page: number;
   page_size: number;
 }
+
+/** 分页API响应 */
+export type PagedResponse<T> = ApiResponse<PaginatedList<T>>;
 
 /** 包裹信息 */
 export interface ParcelItem {

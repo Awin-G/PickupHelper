@@ -39,7 +39,7 @@ const handleUpload = async () => {
   loading.value = true;
   try {
     const res = await batchImport({ file, station_id: 1 });
-    uploadResult.value = res;
+    uploadResult.value = res.data;
     message("文件上传成功，正在处理中", { type: "success" });
   } catch (err: any) {
     message(err?.message || "上传失败", { type: "error" });

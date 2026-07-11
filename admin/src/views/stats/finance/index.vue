@@ -27,7 +27,7 @@ const loadData = async () => {
   loading.value = true;
   try {
     const res = await getProxyFinance(queryParams);
-    financeData.value = res;
+    financeData.value = res.data;
   } catch {
     message("加载失败", { type: "error" });
   } finally {

@@ -33,7 +33,7 @@ const loadData = async () => {
   loading.value = true;
   try {
     const res = await getDashboard();
-    dashboardData.value = res;
+    dashboardData.value = res.data;
   } catch {
     // 使用默认数据
   } finally {

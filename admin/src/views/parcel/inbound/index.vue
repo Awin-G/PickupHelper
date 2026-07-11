@@ -45,7 +45,7 @@ const handleSubmit = async (formEl: FormInstance | undefined) => {
     try {
       const res = await scanIn(form);
       message("入库成功", { type: "success" });
-      successRecords.value.unshift(res);
+      successRecords.value.unshift(res.data);
       resetForm();
     } catch (err: any) {
       message(err?.message || "入库失败", { type: "error" });

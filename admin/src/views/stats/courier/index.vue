@@ -22,7 +22,7 @@ const loadData = async () => {
   loading.value = true;
   try {
     const res = await getCourierCheck(queryParams);
-    tableData.value = res || [];
+    tableData.value = res.data || [];
   } catch {
     message("加载失败", { type: "error" });
   } finally {

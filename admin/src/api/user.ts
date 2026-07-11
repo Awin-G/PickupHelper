@@ -3,7 +3,8 @@ import type {
   UserItem,
   RunnerApplicationItem,
   RunnerAuditRequest,
-  PaginatedList
+  ApiResponse,
+  PagedResponse
 } from "./types/parcel";
 
 /** 用户列表 */
@@ -14,7 +15,7 @@ export const getUserList = (params?: {
   page?: number;
   page_size?: number;
 }) => {
-  return http.request<PaginatedList<UserItem>>("get", "/users", { params });
+  return http.request<PagedResponse<UserItem>>("get", "/users", { params });
 };
 
 /** 跑腿员申请列表 */
@@ -24,7 +25,7 @@ export const getRunnerApplications = (params?: {
   page?: number;
   page_size?: number;
 }) => {
-  return http.request<PaginatedList<RunnerApplicationItem>>(
+  return http.request<PagedResponse<RunnerApplicationItem>>(
     "get",
     "/user/runner/applications",
     { params }
@@ -37,5 +38,5 @@ export const auditRunnerApplication = (
   data: RunnerAuditRequest
 ) => {
   const url = `/user/runner/applications/${id}/audit`;
-  return http.request<RunnerApplicationItem>("put", url, { data });
+  return http.request<ApiResponse<RunnerApplicationItem>>("put", url, { data });
 };

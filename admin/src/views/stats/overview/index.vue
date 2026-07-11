@@ -31,8 +31,8 @@ const loadData = async () => {
       getDashboard(),
       getStatsTrend({ granularity: granularity.value })
     ]);
-    dashboardData.value = dashRes;
-    trendData.value = trendRes.points || [];
+    dashboardData.value = dashRes.data;
+    trendData.value = trendRes.data?.points || [];
   } catch {
     message("加载失败", { type: "error" });
   } finally {

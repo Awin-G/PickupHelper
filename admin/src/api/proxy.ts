@@ -1,5 +1,5 @@
 import { http } from "@/utils/http";
-import type { ProxyOrderItem, PaginatedList } from "./types/parcel";
+import type { ProxyOrderItem, PagedResponse } from "./types/parcel";
 
 /** 代取订单列表 */
 export const getProxyOrders = (params?: {
@@ -8,7 +8,7 @@ export const getProxyOrders = (params?: {
   page?: number;
   page_size?: number;
 }) => {
-  return http.request<PaginatedList<ProxyOrderItem>>("get", "/proxy/my-orders", {
+  return http.request<PagedResponse<ProxyOrderItem>>("get", "/proxy/my-orders", {
     params
   });
 };

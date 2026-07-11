@@ -7,9 +7,22 @@ import {
   routerArrays,
   storageLocal
 } from "../utils";
-import { type LoginResult, type RefreshTokenResult, adminLogin, refreshTokenApi } from "@/api/auth";
+import { adminLogin, refreshTokenApi } from "@/api/auth";
+import type { ApiResponse } from "@/api/types/parcel";
 import { useMultiTagsStoreHook } from "./multiTags";
 import { type DataInfo, setToken, removeToken, userKey } from "@/utils/auth";
+
+type LoginData = {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  role: string;
+};
+
+type RefreshData = {
+  access_token: string;
+  expires_in: number;
+};
 
 export const useUserStore = defineStore("pure-user", {
   state: (): userType => ({
@@ -53,7 +66,7 @@ export const useUserStore = defineStore("pure-user", {
       this.loginDay = Number(value);
     },
     async loginByUsername(data: { username: string; password: string }) {
-      return new Promise<LoginResult>((resolve, reject) => {
+      return new Promise<ApiResponse<LoginData>>((resolve, reject) => {
         adminLogin(data)
           .then(data => {
             if (data.code === 0) {
@@ -88,7 +101,7 @@ export const useUserStore = defineStore("pure-user", {
       router.push("/login");
     },
     async handRefreshToken(data: { refresh_token: string }) {
-      return new Promise<RefreshTokenResult>((resolve, reject) => {
+      return new Promise<ApiResponse<RefreshData>>((resolve, reject) => {
         refreshTokenApi(data)
           .then(data => {
             if (data.code === 0) {
