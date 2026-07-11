@@ -3,6 +3,7 @@ import { proxy } from "@/router/enums";
 
 export default {
   path: "/proxy",
+  redirect: "/proxy/orders",
   meta: {
     icon: "ep/van",
     title: "代取管理",
@@ -15,7 +16,8 @@ export default {
       component: () => import("@/views/proxy/index.vue"),
       meta: {
         title: "代取订单",
-        icon: "ep/van"
+        icon: "ep/van",
+        showParent: true
       }
     }
   ]

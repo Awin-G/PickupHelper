@@ -3,6 +3,7 @@ import { stats } from "@/router/enums";
 
 export default {
   path: "/stats",
+  redirect: "/stats/overview",
   meta: {
     icon: "ep/pie-chart",
     title: "数据统计",

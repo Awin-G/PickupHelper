@@ -3,6 +3,7 @@ import { user } from "@/router/enums";
 
 export default {
   path: "/user",
+  redirect: "/user/list",
   meta: {
     icon: "ep/user",
     title: "用户管理",

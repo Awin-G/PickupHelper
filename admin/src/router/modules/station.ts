@@ -3,6 +3,7 @@ import { station } from "@/router/enums";
 
 export default {
   path: "/station",
+  redirect: "/station/list",
   meta: {
     icon: "ep/office-building",
     title: "驿站管理",
@@ -15,7 +16,8 @@ export default {
       component: () => import("@/views/station/index.vue"),
       meta: {
         title: "驿站列表",
-        icon: "ep/office-building"
+        icon: "ep/office-building",
+        showParent: true
       }
     }
   ]

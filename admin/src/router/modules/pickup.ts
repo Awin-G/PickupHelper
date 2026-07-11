@@ -3,6 +3,7 @@ import { pickup } from "@/router/enums";
 
 export default {
   path: "/pickup",
+  redirect: "/pickup/verify",
   meta: {
     icon: "ep/check",
     title: "出库核销",
@@ -15,7 +16,8 @@ export default {
       component: () => import("@/views/pickup/index.vue"),
       meta: {
         title: "核销取件",
-        icon: "ep/check"
+        icon: "ep/check",
+        showParent: true
       }
     }
   ]
