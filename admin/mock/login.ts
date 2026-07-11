@@ -3,22 +3,18 @@ import { defineFakeRoute } from "vite-plugin-fake-server/client";
 
 export default defineFakeRoute([
   {
-    url: "/api/v1/auth/login",
+    url: "/api/v1/admin/auth/login",
     method: "post",
     response: ({ body }) => {
-      if (body.username === "admin") {
+      if (body.username === "admin" && body.password === "admin123") {
         return {
           code: 0,
           message: "success",
           data: {
-            accessToken: "eyJhbGciOiJIUzUxMiJ9.admin",
-            refreshToken: "eyJhbGciOiJIUzUxMiJ9.adminRefresh",
-            expires: "2030/12/31 23:59:59",
-            avatar: "https://avatars.githubusercontent.com/u/44761321",
-            username: "admin",
-            nickname: "系统管理员",
-            roles: ["admin"],
-            permissions: ["*:*:*"]
+            access_token: "eyJhbGciOiJIUzUxMiJ9.admin",
+            refresh_token: "eyJhbGciOiJIUzUxMiJ9.adminRefresh",
+            expires_in: 7200,
+            role: "admin"
           }
         };
       } else {

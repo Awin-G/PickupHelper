@@ -62,11 +62,11 @@ export const useUserStore = defineStore("pure-user", {
                 accessToken: userData.access_token,
                 refreshToken: userData.refresh_token,
                 expires: new Date(Date.now() + userData.expires_in * 1000),
-                avatar: userData.user.avatar || "",
-                username: userData.user.nickname || userData.user.phone,
-                nickname: userData.user.nickname || "",
-                roles: userData.user.roles || [],
-                permissions: userData.user.permissions || []
+                avatar: "",
+                username: "系统管理员",
+                nickname: "系统管理员",
+                roles: [userData.role],
+                permissions: ["*:*:*"]
               });
               resolve(data);
             } else {

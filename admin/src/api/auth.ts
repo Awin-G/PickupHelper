@@ -2,7 +2,7 @@ import { http } from "@/utils/http";
 
 /** 管理员登录 */
 export const adminLogin = (data: { username: string; password: string }) => {
-  return http.request<LoginResult>("post", "/auth/login", { data });
+  return http.request<LoginResult>("post", "/admin/auth/login", { data });
 };
 
 /** 刷新 Token */
@@ -22,16 +22,7 @@ export type LoginResult = {
     access_token: string;
     refresh_token: string;
     expires_in: number;
-    user: {
-      id: number;
-      phone: string;
-      nickname: string;
-      avatar: string;
-      user_type: number;
-      roles: string[];
-      permissions: string[];
-      station_id: number;
-    };
+    role: string;
   };
 };
 
