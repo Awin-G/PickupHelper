@@ -80,10 +80,13 @@ func Register(engine *gin.Engine, cfg *config.Config, h *Handlers) {
 	}
 
 	// Admin-only routes (JWT + AdminOnly).
+	adminGroup := jwtGroup.Group("/admin")
+	adminGroup.Use(middleware.AdminOnly())
 	if h.User != nil {
-		adminGroup := jwtGroup.Group("/admin")
-		adminGroup.Use(middleware.AdminOnly())
 		h.User.RegisterAdminRoutes(adminGroup)
+	}
+	if h.Auth != nil {
+		h.Auth.RegisterAdminAuthManagementRoutes(adminGroup)
 	}
 
 	// Parcel admin routes (JWT + AdminOnly).

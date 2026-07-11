@@ -47,6 +47,7 @@ internal/
 ├── handler/    # 12 个 handler
 │   ├── auth_handler.go          → POST /auth/send-code, /auth/login, /auth/refresh
 │   │                             → POST /admin/auth/login
+│   │                             → GET  /admin/auth/sms-codes
 │   ├── user_handler.go          → GET/PUT /user/info, POST /user/runner/apply
 │   │                             → GET/PUT /admin/user/runner/...
 │   ├── parcel_handler.go        → POST /parcels/scan-in, GET /parcels, ...

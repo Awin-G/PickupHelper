@@ -213,6 +213,7 @@ type mockSMSCodeCache struct {
 	DelCodeFn               func(ctx context.Context, phone string) error
 	CheckAndIncrPhoneRateFn func(ctx context.Context, phone string) (int, error)
 	CheckAndIncrIPRateFn    func(ctx context.Context, ip string) (int, error)
+	ListCodesFn             func(ctx context.Context) ([]repository.ActiveCode, error)
 
 	DelCodeCalls []string
 }
@@ -277,6 +278,26 @@ func (m *mockSMSCodeCache) CheckAndIncrIPRate(ctx context.Context, ip string) (i
 	defer m.mu.Unlock()
 	m.ipRate[ip]++
 	return m.ipRate[ip], nil
+}
+
+func (m *mockSMSCodeCache) ListCodes(ctx context.Context) ([]repository.ActiveCode, error) {
+	if m.ListCodesFn != nil {
+		return m.ListCodesFn(ctx)
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]repository.ActiveCode, 0, len(m.codes))
+	for phone, code := range m.codes {
+		if code == "" {
+			continue
+		}
+		out = append(out, repository.ActiveCode{
+			Phone:    phone,
+			Code:     code,
+			ExpireIn: 300,
+		})
+	}
+	return out, nil
 }
 
 // --- mockSMSProvider ---

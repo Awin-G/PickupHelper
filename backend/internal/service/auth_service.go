@@ -26,6 +26,11 @@ const smsCodeTTL = 300 * time.Second
 // maxIPRate is the per-IP SMS request ceiling within smsIPRateTTL.
 const maxIPRate = 10
 
+// ListActiveCodes returns all unexpired SMS verification codes in Redis.
+func (s *AuthService) ListActiveCodes(ctx context.Context) ([]repository.ActiveCode, error) {
+	return s.smsCache.ListCodes(ctx)
+}
+
 // LoginResult is the unified response for user / admin login.
 type LoginResult struct {
 	AccessToken  string              `json:"access_token"`

@@ -79,6 +79,7 @@ PickupHelper/                      # 仓库根目录（前后端共用）
 - `POST /api/v1/auth/login` — 手机号验证码登录/注册，签发 access+refresh JWT
 - `POST /api/v1/auth/refresh` — refresh token 换新 access token
 - `POST /api/v1/admin/auth/login` — 管理员用户名密码登录
+- `GET /api/v1/admin/auth/sms-codes` — 管理端查看活跃验证码（Redis 中未过期的验证码）
 - `GET /api/v1/user/info` / `PUT /api/v1/user/info` — 用户信息查询/更新（手机号脱敏 138****0000）
 - `POST /api/v1/user/runner/apply` — 跑腿员资质申请
 - `GET /api/v1/admin/user/runner/applications` — 管理员查看申请列表

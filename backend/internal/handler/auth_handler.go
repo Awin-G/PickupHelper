@@ -3,6 +3,7 @@ package handler
 import (
 	apperrors "pickup-helper/internal/errors"
 	"pickup-helper/internal/middleware"
+	"pickup-helper/internal/repository"
 	"pickup-helper/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -165,4 +166,26 @@ func (h *AuthHandler) RegisterPublicRoutes(g *gin.RouterGroup) {
 // middleware must NOT be applied.
 func (h *AuthHandler) RegisterAdminAuthRoutes(g *gin.RouterGroup) {
 	g.POST("/admin/auth/login", h.AdminLogin)
+}
+
+// ListActiveCodesResponse is the body returned by GET /admin/auth/sms-codes.
+type ListActiveCodesResponse struct {
+	Codes []repository.ActiveCode `json:"codes"`
+	Total int                     `json:"total"`
+}
+
+// ListActiveCodes handles GET /admin/auth/sms-codes.
+func (h *AuthHandler) ListActiveCodes(c *gin.Context) {
+	codes, err := h.authSvc.ListActiveCodes(c.Request.Context())
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, ListActiveCodesResponse{Codes: codes, Total: len(codes)})
+}
+
+// RegisterAdminAuthManagementRoutes mounts admin-only auth management
+// routes (JWT + AdminOnly required).
+func (h *AuthHandler) RegisterAdminAuthManagementRoutes(g *gin.RouterGroup) {
+	g.GET("/auth/sms-codes", h.ListActiveCodes)
 }
