@@ -19,11 +19,15 @@ type mockUserRepo struct {
 	FindByIDFn           func(ctx context.Context, db repository.DBTX, id int64) (*models.User, error)
 	FindByOpenIDFn       func(ctx context.Context, db repository.DBTX, openid string) (*models.User, error)
 	CreateFn             func(ctx context.Context, db repository.DBTX, phone, openid string) (int64, error)
+	CreateAdminFn        func(ctx context.Context, db repository.DBTX, phone, nickname string, userType int8) (int64, error)
 	UpdateProfileFn      func(ctx context.Context, db repository.DBTX, id int64, nickname, avatar string) error
 	UpdateRunnerStatusFn func(ctx context.Context, db repository.DBTX, id int64, userType, runnerStatus int8) error
 	SetBlacklistFn       func(ctx context.Context, db repository.DBTX, id int64, isBlacklisted int8) error
 	UpdateOpenIDFn func(ctx context.Context, db repository.DBTX, id int64, openid string) error
 	SaveAvatarFn   func(ctx context.Context, db repository.DBTX, id int64, data []byte, contentType string) error
+	ListUsersFn    func(ctx context.Context, db repository.DBTX, filter repository.UserListFilter) ([]*models.User, int64, error)
+	UpdateUserFn   func(ctx context.Context, db repository.DBTX, id int64, cols []string, args []any) error
+	DeleteUserFn   func(ctx context.Context, db repository.DBTX, id int64) error
 
 	// Call records for assertions.
 	CreateCalls             []createCall
@@ -118,6 +122,34 @@ func (m *mockUserRepo) UpdateOpenID(ctx context.Context, db repository.DBTX, id 
 func (m *mockUserRepo) SaveAvatar(ctx context.Context, db repository.DBTX, id int64, data []byte, contentType string) error {
 	if m.SaveAvatarFn != nil {
 		return m.SaveAvatarFn(ctx, db, id, data, contentType)
+	}
+	return nil
+}
+
+func (m *mockUserRepo) CreateAdmin(ctx context.Context, db repository.DBTX, phone, nickname string, userType int8) (int64, error) {
+	if m.CreateAdminFn != nil {
+		return m.CreateAdminFn(ctx, db, phone, nickname, userType)
+	}
+	return 2, nil
+}
+
+func (m *mockUserRepo) ListUsers(ctx context.Context, db repository.DBTX, filter repository.UserListFilter) ([]*models.User, int64, error) {
+	if m.ListUsersFn != nil {
+		return m.ListUsersFn(ctx, db, filter)
+	}
+	return nil, 0, nil
+}
+
+func (m *mockUserRepo) UpdateUser(ctx context.Context, db repository.DBTX, id int64, cols []string, args []any) error {
+	if m.UpdateUserFn != nil {
+		return m.UpdateUserFn(ctx, db, id, cols, args)
+	}
+	return nil
+}
+
+func (m *mockUserRepo) DeleteUser(ctx context.Context, db repository.DBTX, id int64) error {
+	if m.DeleteUserFn != nil {
+		return m.DeleteUserFn(ctx, db, id)
 	}
 	return nil
 }
