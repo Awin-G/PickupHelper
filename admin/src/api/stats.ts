@@ -26,9 +26,9 @@ type TrendData = {
 type FinanceData = {
   total_orders: number;
   completed_orders: number;
-  total_reward: number;
-  avg_reward: number;
-  by_taker: Array<{
+  total_amount: number;
+  avg_amount: number;
+  by_taker?: Array<{
     taker_id: number;
     taker_nickname: string;
     order_count: number;

@@ -12,8 +12,8 @@ const loading = ref(true);
 const financeData = ref({
   total_orders: 0,
   completed_orders: 0,
-  total_reward: 0,
-  avg_reward: 0,
+  total_amount: 0,
+  avg_amount: 0,
   by_taker: [] as any[]
 });
 
@@ -104,7 +104,7 @@ onMounted(() => {
           <el-card shadow="never">
             <p class="text-sm text-gray-500">总悬赏金额</p>
             <p class="text-2xl font-bold mt-1 text-red-500">
-              {{ formatMoneyWithSymbol(financeData.total_reward) }}
+              {{ formatMoneyWithSymbol(financeData.total_amount) }}
             </p>
           </el-card>
         </el-col>
@@ -112,7 +112,7 @@ onMounted(() => {
           <el-card shadow="never">
             <p class="text-sm text-gray-500">平均悬赏</p>
             <p class="text-2xl font-bold mt-1 text-orange-500">
-              {{ formatMoneyWithSymbol(financeData.avg_reward) }}
+              {{ formatMoneyWithSymbol(financeData.avg_amount) }}
             </p>
           </el-card>
         </el-col>
