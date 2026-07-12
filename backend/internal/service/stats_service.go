@@ -118,6 +118,68 @@ func (s *StatsService) Trend(ctx context.Context, stationID int64, granularity s
 	return &TrendResult{Granularity: granularity, Points: points}, nil
 }
 
+// CourierCheckResult is the response for GET /stats/courier-check.
+type CourierCheckItem struct {
+	CourierCompany  string  `json:"courier_company"`
+	InboundCount    int64   `json:"inbound_count"`
+	OutboundCount   int64   `json:"outbound_count"`
+	DelayedCount    int64   `json:"delayed_count"`
+	ReturnedCount   int64   `json:"returned_count"`
+	AvgStorageHours float64 `json:"avg_storage_hours"`
+}
+
+// CourierCheck returns per-courier-company parcel statistics.
+func (s *StatsService) CourierCheck(ctx context.Context, stationID int64, start, end string) ([]*CourierCheckItem, error) {
+	type row struct {
+		CourierCompany  string  `db:"courier_company"`
+		InboundCount    int64   `db:"inbound_count"`
+		OutboundCount   int64   `db:"outbound_count"`
+		DelayedCount    int64   `db:"delayed_count"`
+		ReturnedCount   int64   `db:"returned_count"`
+		AvgStorageHours float64 `db:"avg_storage_hours"`
+	}
+
+	q := `SELECT courier_company,
+	             COUNT(*) AS inbound_count,
+	             COALESCE(SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END), 0) AS outbound_count,
+	             COALESCE(SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END), 0) AS delayed_count,
+	             COALESCE(SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END), 0) AS returned_count,
+	             COALESCE(AVG(CASE WHEN pickup_time IS NOT NULL
+	                 THEN TIMESTAMPDIFF(HOUR, storage_time, pickup_time)
+	                 ELSE TIMESTAMPDIFF(HOUR, storage_time, NOW()) END), 0) AS avg_storage_hours
+	      FROM parcels
+	      WHERE station_id = ?`
+	var args []any
+	args = append(args, stationID)
+
+	if start != "" {
+		q += " AND DATE(storage_time) >= ?"
+		args = append(args, start)
+	}
+	if end != "" {
+		q += " AND DATE(storage_time) <= ?"
+		args = append(args, end)
+	}
+	q += " GROUP BY courier_company ORDER BY inbound_count DESC"
+
+	var rows []row
+	if err := s.db.SelectContext(ctx, &rows, q, args...); err != nil {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	items := make([]*CourierCheckItem, len(rows))
+	for i, r := range rows {
+		items[i] = &CourierCheckItem{
+			CourierCompany:  r.CourierCompany,
+			InboundCount:    r.InboundCount,
+			OutboundCount:   r.OutboundCount,
+			DelayedCount:    r.DelayedCount,
+			ReturnedCount:   r.ReturnedCount,
+			AvgStorageHours: r.AvgStorageHours,
+		}
+	}
+	return items, nil
+}
+
 // ProxyFinance returns proxy order financial summary.
 func (s *StatsService) ProxyFinance(ctx context.Context, stationID int64) (*ProxyFinanceResult, error) {
 	r := &ProxyFinanceResult{}

@@ -90,6 +90,12 @@ PickupHelper/                      # 仓库根目录（前后端共用）
 - `POST /api/v1/admin/users` — 管理员创建用户
 - `PUT /api/v1/admin/users/:id` — 管理员修改用户信息（部分更新）
 - `DELETE /api/v1/admin/users/:id` — 管理员删除用户
+- `GET /api/v1/stations` — 驿站列表（admin-only，支持 keyword/status 筛选 + 分页）
+- `GET /api/v1/stations/:id` — 驿站详情
+- `POST /api/v1/stations` — 创建驿站
+- `PUT /api/v1/stations/:id` — 更新驿站信息
+- `GET /api/v1/stats/courier-check` — 快递公司对账（admin-only）
+- `GET /api/v1/admin/get-async-routes` — 管理端动态路由配置
 
 ### Phase 3 已交付能力
 

@@ -168,6 +168,105 @@ func (h *AuthHandler) RegisterAdminAuthRoutes(g *gin.RouterGroup) {
 	g.POST("/admin/auth/login", h.AdminLogin)
 }
 
+// GetAsyncRoutes returns the dynamic route tree for the admin frontend
+// (Pure Admin style). For now returns a fixed set of admin menu routes.
+func (h *AuthHandler) GetAsyncRoutes(c *gin.Context) {
+	routes := []gin.H{
+		{
+			"name":      "dashboard",
+			"path":      "/dashboard",
+			"component": "/dashboard/index",
+			"meta": gin.H{
+				"title": "看板",
+				"icon":  "ant-design:dashboard-outlined",
+				"rank":  1,
+			},
+		},
+		{
+			"name":      "parcel",
+			"path":      "/parcel",
+			"component": "/parcel/index",
+			"meta": gin.H{
+				"title": "包裹管理",
+				"icon":  "ant-design:inbox-outlined",
+				"rank":  2,
+			},
+			"children": []gin.H{
+				{"name": "parcel-list", "path": "/parcel/list", "component": "/parcel/list", "meta": gin.H{"title": "包裹列表"}},
+				{"name": "parcel-scan-in", "path": "/parcel/scan-in", "component": "/parcel/scan-in", "meta": gin.H{"title": "扫码入库"}},
+			},
+		},
+		{
+			"name":      "user",
+			"path":      "/user",
+			"component": "/user/index",
+			"meta": gin.H{
+				"title": "用户管理",
+				"icon":  "ant-design:user-outlined",
+				"rank":  3,
+			},
+			"children": []gin.H{
+				{"name": "user-list", "path": "/user/list", "component": "/user/list", "meta": gin.H{"title": "用户列表"}},
+				{"name": "runner-audit", "path": "/user/runner-audit", "component": "/user/runner-audit", "meta": gin.H{"title": "跑腿员审核"}},
+			},
+		},
+		{
+			"name":      "station",
+			"path":      "/station",
+			"component": "/station/index",
+			"meta": gin.H{
+				"title": "驿站管理",
+				"icon":  "ant-design:shop-outlined",
+				"rank":  4,
+			},
+			"children": []gin.H{
+				{"name": "station-list", "path": "/station/list", "component": "/station/list", "meta": gin.H{"title": "驿站列表"}},
+			},
+		},
+		{
+			"name":      "shelf",
+			"path":      "/shelf",
+			"component": "/shelf/index",
+			"meta": gin.H{
+				"title": "货架管理",
+				"icon":  "ant-design:table-outlined",
+				"rank":  5,
+			},
+			"children": []gin.H{
+				{"name": "shelf-list", "path": "/shelf/list", "component": "/shelf/list", "meta": gin.H{"title": "货架列表"}},
+			},
+		},
+		{
+			"name":      "stats",
+			"path":      "/stats",
+			"component": "/stats/index",
+			"meta": gin.H{
+				"title": "数据统计",
+				"icon":  "ant-design:bar-chart-outlined",
+				"rank":  6,
+			},
+			"children": []gin.H{
+				{"name": "stats-dashboard", "path": "/stats/dashboard", "component": "/stats/dashboard", "meta": gin.H{"title": "统计看板"}},
+				{"name": "stats-courier", "path": "/stats/courier", "component": "/stats/courier", "meta": gin.H{"title": "快递对账"}},
+			},
+		},
+		{
+			"name":      "sms",
+			"path":      "/sms",
+			"component": "/sms/index",
+			"meta": gin.H{
+				"title": "短信管理",
+				"icon":  "ant-design:message-outlined",
+				"rank":  7,
+			},
+			"children": []gin.H{
+				{"name": "sms-codes", "path": "/sms/codes", "component": "/sms/codes", "meta": gin.H{"title": "验证码列表"}},
+			},
+		},
+	}
+	Success(c, gin.H{"routes": routes})
+}
+
 // ListActiveCodesResponse is the body returned by GET /admin/auth/sms-codes.
 type ListActiveCodesResponse struct {
 	Codes []repository.ActiveCode `json:"codes"`
@@ -188,4 +287,5 @@ func (h *AuthHandler) ListActiveCodes(c *gin.Context) {
 // routes (JWT + AdminOnly required).
 func (h *AuthHandler) RegisterAdminAuthManagementRoutes(g *gin.RouterGroup) {
 	g.GET("/auth/sms-codes", h.ListActiveCodes)
+	g.GET("/get-async-routes", h.GetAsyncRoutes)
 }

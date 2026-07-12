@@ -93,9 +93,40 @@ func (h *StatsHandler) ProxyFinance(c *gin.Context) {
 	Success(c, res)
 }
 
+// CourierCheckQuery is the query for GET /stats/courier-check.
+type CourierCheckQuery struct {
+	StationID int64  `form:"station_id" binding:"omitempty,min=1"`
+	Courier   string `form:"courier_company" binding:"omitempty,max=50"`
+	Start     string `form:"start" binding:"omitempty"`
+	End       string `form:"end" binding:"omitempty"`
+}
+
+// CourierCheck handles GET /stats/courier-check.
+func (h *StatsHandler) CourierCheck(c *gin.Context) {
+	_, _, stationID, _, ok := middleware.CurrentUser(c)
+	if !ok {
+		Error(c, apperrors.New(apperrors.ErrUnauthenticated, "missing user context"))
+		return
+	}
+	var q CourierCheckQuery
+	if !middleware.BindAndValidateQuery(c, &q) {
+		return
+	}
+	if q.StationID > 0 {
+		stationID = q.StationID
+	}
+	items, err := h.statsSvc.CourierCheck(c.Request.Context(), stationID, q.Start, q.End)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, gin.H{"items": items})
+}
+
 // RegisterStatsRoutes mounts stats routes (admin-only).
 func (h *StatsHandler) RegisterStatsRoutes(g *gin.RouterGroup) {
 	g.GET("/dashboard", h.Dashboard)
 	g.GET("/trend", h.Trend)
 	g.GET("/proxy-finance", h.ProxyFinance)
+	g.GET("/courier-check", h.CourierCheck)
 }
