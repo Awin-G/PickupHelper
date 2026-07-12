@@ -58,7 +58,7 @@ func TestStationGet_NotFound(t *testing.T) {
 func TestStationCreate_Success(t *testing.T) {
 	sr := &mockStationRepo{
 		FindByIDFn: func(_ context.Context, _ repository.DBTX, id int64) (*models.Station, error) {
-			return &models.Station{ID: id, Name: "站C", Address: "addr", Latitude: 30.5, Longitude: 114.3, Status: 1}, nil
+			return &models.Station{ID: id, Name: "站C", Address: "addr", Latitude: sql.NullFloat64{Float64: 30.5, Valid: true}, Longitude: sql.NullFloat64{Float64: 114.3, Valid: true}, Status: 1}, nil
 		},
 	}
 	svc := NewStationService(sr, nil)

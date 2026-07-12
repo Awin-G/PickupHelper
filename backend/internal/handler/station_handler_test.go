@@ -55,10 +55,10 @@ func newStationHandlerEngine(svc *fakeStationSvc) *gin.Engine {
 		c.Next()
 	})
 	g := engine.Group("/api/v1/stations")
-	g.GET("/stations", func(c *gin.Context) { callListStations(c, svc) })
-	g.GET("/stations/:id", func(c *gin.Context) { callGetStation(c, svc) })
-	g.POST("/stations", func(c *gin.Context) { callCreateStation(c, svc) })
-	g.PUT("/stations/:id", func(c *gin.Context) { callUpdateStation(c, svc) })
+	g.GET("", func(c *gin.Context) { callListStations(c, svc) })
+	g.GET("/:id", func(c *gin.Context) { callGetStation(c, svc) })
+	g.POST("", func(c *gin.Context) { callCreateStation(c, svc) })
+	g.PUT("/:id", func(c *gin.Context) { callUpdateStation(c, svc) })
 	return engine
 }
 
@@ -147,7 +147,7 @@ func callUpdateStation(c *gin.Context, svc *fakeStationSvc) {
 
 func TestHandler_ListStations_Success(t *testing.T) {
 	engine := newStationHandlerEngine(&fakeStationSvc{})
-	rr := doJSON(t, engine, http.MethodGet, "/api/v1/stations/stations?page=1&page_size=20", nil)
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/stations?page=1&page_size=20", nil)
 	assert.Equal(t, http.StatusOK, rr.Code)
 	body := decodeResponse(t, rr)
 	data := body["data"].(map[string]any)
@@ -156,7 +156,7 @@ func TestHandler_ListStations_Success(t *testing.T) {
 
 func TestHandler_GetStation_Success(t *testing.T) {
 	engine := newStationHandlerEngine(&fakeStationSvc{})
-	rr := doJSON(t, engine, http.MethodGet, "/api/v1/stations/stations/5", nil)
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/stations/5", nil)
 	assert.Equal(t, http.StatusOK, rr.Code)
 	body := decodeResponse(t, rr)
 	data := body["data"].(map[string]any)
@@ -165,7 +165,7 @@ func TestHandler_GetStation_Success(t *testing.T) {
 
 func TestHandler_CreateStation_Success(t *testing.T) {
 	engine := newStationHandlerEngine(&fakeStationSvc{})
-	rr := doJSON(t, engine, http.MethodPost, "/api/v1/stations/stations", CreateStationRequest{
+	rr := doJSON(t, engine, http.MethodPost, "/api/v1/stations", CreateStationRequest{
 		Name: "新站", Address: "某地", Latitude: 30.5, Longitude: 114.3,
 	})
 	assert.Equal(t, http.StatusOK, rr.Code)
@@ -176,7 +176,7 @@ func TestHandler_CreateStation_Success(t *testing.T) {
 
 func TestHandler_UpdateStation_Success(t *testing.T) {
 	engine := newStationHandlerEngine(&fakeStationSvc{})
-	rr := doJSON(t, engine, http.MethodPut, "/api/v1/stations/stations/3", UpdateStationRequest{
+	rr := doJSON(t, engine, http.MethodPut, "/api/v1/stations/3", UpdateStationRequest{
 		Name: strPtr("更新名"),
 	})
 	assert.Equal(t, http.StatusOK, rr.Code)
@@ -187,7 +187,7 @@ func TestHandler_UpdateStation_Success(t *testing.T) {
 
 func TestHandler_GetStation_BadID(t *testing.T) {
 	engine := newStationHandlerEngine(&fakeStationSvc{})
-	rr := doJSON(t, engine, http.MethodGet, "/api/v1/stations/stations/abc", nil)
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/stations/abc", nil)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
 

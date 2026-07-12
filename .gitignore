@@ -31,3 +31,4 @@ Thumbs.db
 *.dll
 *.so
 *.dylib
+backend/pickup-server

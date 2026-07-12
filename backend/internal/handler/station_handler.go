@@ -130,9 +130,10 @@ func (h *StationHandler) UpdateStation(c *gin.Context) {
 }
 
 // RegisterStationRoutes mounts station routes (admin-only).
+// The group is expected to be mounted at /stations, so routes are relative.
 func (h *StationHandler) RegisterStationRoutes(g *gin.RouterGroup) {
-	g.GET("/stations", h.ListStations)
-	g.GET("/stations/:id", h.GetStation)
-	g.POST("/stations", h.CreateStation)
-	g.PUT("/stations/:id", h.UpdateStation)
+	g.GET("", h.ListStations)
+	g.GET("/:id", h.GetStation)
+	g.POST("", h.CreateStation)
+	g.PUT("/:id", h.UpdateStation)
 }

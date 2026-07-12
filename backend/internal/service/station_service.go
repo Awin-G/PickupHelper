@@ -125,8 +125,8 @@ func (s *StationService) CreateStation(ctx context.Context, req CreateStationReq
 	st := &models.Station{
 		Name:          req.Name,
 		Address:       req.Address,
-		Latitude:      req.Latitude,
-		Longitude:     req.Longitude,
+		Latitude:      sql.NullFloat64{Float64: req.Latitude, Valid: req.Latitude != 0},
+		Longitude:     sql.NullFloat64{Float64: req.Longitude, Valid: req.Longitude != 0},
 		BusinessHours: biz,
 		Status:        status,
 	}
