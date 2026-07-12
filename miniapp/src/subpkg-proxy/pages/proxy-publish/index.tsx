@@ -67,8 +67,8 @@ export default function ProxyPublishPage() {
       setTimeout(() => {
         Taro.navigateBack();
       }, 1500);
-    } catch {
-      Taro.showToast({ title: '发布失败', icon: 'none' });
+    } catch (err: any) {
+      Taro.showToast({ title: err.msg || err.message || '发布失败', icon: 'none', duration: 3000 });
     } finally {
       setLoading(false);
     }

@@ -34,8 +34,8 @@ export default function ProxyHallPage() {
             const order = await acceptTask(id);
             Taro.showToast({ title: '接单成功', icon: 'success' });
             Taro.navigateTo({ url: `/subpkg-proxy/pages/proxy-detail/index?id=${order.id}` });
-          } catch {
-            Taro.showToast({ title: '接单失败', icon: 'none' });
+          } catch (err: any) {
+            Taro.showToast({ title: err.msg || err.message || '接单失败', icon: 'none', duration: 3000 });
           }
         }
       },

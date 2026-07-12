@@ -144,9 +144,9 @@ export class BusinessError extends Error {
   msg: string;
 
   constructor(code: number, msg: string) {
-    super(msg);
+    super(`[${code}] ${msg}`);
     this.name = 'BusinessError';
     this.code = code;
-    this.msg = msg;
+    this.msg = `[${code}] ${msg}`;
   }
 }

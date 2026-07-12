@@ -33,8 +33,8 @@ export default function SelfCheckoutPage() {
       });
       Taro.showToast({ title: '出库成功', icon: 'success' });
       setTimeout(() => Taro.navigateBack(), 1500);
-    } catch (err) {
-      Taro.showToast({ title: '出库失败', icon: 'none' });
+    } catch (err: any) {
+      Taro.showToast({ title: err.msg || err.message || '出库失败', icon: 'none', duration: 3000 });
     } finally {
       setLoading(false);
     }

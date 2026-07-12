@@ -14,7 +14,7 @@ export default function StationMapPage() {
   useEffect(() => {
     stationApi.list()
       .then(setStations)
-      .catch(() => Taro.showToast({ title: '获取驿站列表失败', icon: 'none' }))
+      .catch((err: any) => Taro.showToast({ title: err.msg || err.message || '获取驿站列表失败', icon: 'none', duration: 3000 }))
       .finally(() => setLoading(false));
   }, []);
 

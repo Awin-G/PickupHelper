@@ -56,8 +56,8 @@ export default function LoginPage() {
       await authApi.sendCode(phone);
       startCountdown();
       Taro.showToast({ title: '验证码已发送', icon: 'success' });
-    } catch {
-      Taro.showToast({ title: '发送失败，请重试', icon: 'none' });
+    } catch (err: any) {
+      Taro.showToast({ title: err.msg || err.message || '发送失败', icon: 'none', duration: 3000 });
     }
   };
 
@@ -80,8 +80,8 @@ export default function LoginPage() {
       await login(phone, code);
       Taro.showToast({ title: '登录成功', icon: 'success' });
       setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1000);
-    } catch {
-      Taro.showToast({ title: '登录失败，请重试', icon: 'none' });
+    } catch (err: any) {
+      Taro.showToast({ title: err.msg || err.message || '登录失败', icon: 'none', duration: 3000 });
     } finally {
       setLoading(false);
     }

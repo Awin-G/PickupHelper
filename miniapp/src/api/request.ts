@@ -143,7 +143,7 @@ export async function request<T>(config: RequestConfig): Promise<T> {
     return body.data;
   } catch (err) {
     if (err instanceof BusinessError) throw err;
-    throw new BusinessError(-1, '网络请求失败，请稍后重试');
+    throw new BusinessError(-1, '网络请求失败，请稍后重试（-1）');
   } finally {
     if (config.showLoading) {
       Taro.hideLoading();

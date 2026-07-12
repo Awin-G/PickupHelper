@@ -22,7 +22,7 @@ export default function PickupCodePage() {
             setError('无法获取取件码');
           }
         })
-        .catch(() => setError('加载失败'));
+        .catch((err: any) => setError(err.msg || err.message || '加载失败'));
     }
     Taro.setKeepScreenOn({ keepScreenOn: true });
     return () => {

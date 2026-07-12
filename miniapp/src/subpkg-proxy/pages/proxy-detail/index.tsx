@@ -37,8 +37,8 @@ export default function ProxyDetailPage() {
             await proxyApi.confirmDelivery(order.id, { accepted: true });
             Taro.showToast({ title: '已确认送达', icon: 'success' });
             setOrder({ ...order, status: PROXY_STATUS.COMPLETED, status_text: '已完成' });
-          } catch {
-            Taro.showToast({ title: '操作失败', icon: 'none' });
+          } catch (err: any) {
+            Taro.showToast({ title: err.msg || err.message || '操作失败', icon: 'none', duration: 3000 });
           }
         }
       },
@@ -55,8 +55,8 @@ export default function ProxyDetailPage() {
             await proxyApi.confirmDelivery(order.id, { accepted: true });
             Taro.showToast({ title: '已确认收货', icon: 'success' });
             setOrder({ ...order, status: PROXY_STATUS.COMPLETED, status_text: '已完成' });
-          } catch {
-            Taro.showToast({ title: '操作失败', icon: 'none' });
+          } catch (err: any) {
+            Taro.showToast({ title: err.msg || err.message || '操作失败', icon: 'none', duration: 3000 });
           }
         }
       },
@@ -73,8 +73,8 @@ export default function ProxyDetailPage() {
           try {
             await proxyApi.confirmDelivery(order.id, { accepted: false, reason: res.content });
             Taro.showToast({ title: '已拒绝', icon: 'success' });
-          } catch {
-            Taro.showToast({ title: '操作失败', icon: 'none' });
+          } catch (err: any) {
+            Taro.showToast({ title: err.msg || err.message || '操作失败', icon: 'none', duration: 3000 });
           }
         }
       },
