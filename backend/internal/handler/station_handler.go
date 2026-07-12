@@ -19,7 +19,7 @@ func NewStationHandler(ss *service.StationService) *StationHandler {
 // ListStationsQuery is the query for GET /stations.
 type ListStationsQuery struct {
 	Keyword  string `form:"keyword" binding:"omitempty,max=50"`
-	Status   *int8  `form:"status" binding:"omitempt,oneof=0 1"`
+	Status   *int8  `form:"status" binding:"omitempty,oneof=0 1"`
 	Page     int    `form:"page" binding:"omitempty,min=1"`
 	PageSize int    `form:"page_size" binding:"omitempty,min=1,max=100"`
 }

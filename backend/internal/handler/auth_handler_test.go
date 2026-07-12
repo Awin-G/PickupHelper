@@ -12,6 +12,7 @@ import (
 	apperrors "pickup-helper/internal/errors"
 	"pickup-helper/internal/middleware"
 	"pickup-helper/internal/models"
+	"pickup-helper/internal/repository"
 	"pickup-helper/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -23,10 +24,11 @@ import (
 // is controlled by a function field; when nil, the method returns a
 // sensible zero-value default.
 type fakeAuthSvc struct {
-	sendCodeFn   func(ctx context.Context, phone, ip string) (int, error)
-	loginFn      func(ctx context.Context, phone, code, openid string) (*service.LoginResult, error)
-	refreshFn    func(ctx context.Context, refreshToken string) (*service.RefreshResult, error)
-	adminLoginFn func(ctx context.Context, username, password string) (*service.LoginResult, error)
+	sendCodeFn       func(ctx context.Context, phone, ip string) (int, error)
+	loginFn          func(ctx context.Context, phone, code, openid string) (*service.LoginResult, error)
+	refreshFn        func(ctx context.Context, refreshToken string) (*service.RefreshResult, error)
+	adminLoginFn     func(ctx context.Context, username, password string) (*service.LoginResult, error)
+	listActiveCodesFn func(ctx context.Context) ([]repository.ActiveCode, error)
 }
 
 func (f *fakeAuthSvc) SendCode(ctx context.Context, phone, ip string) (int, error) {
@@ -52,6 +54,12 @@ func (f *fakeAuthSvc) AdminLogin(ctx context.Context, u, p string) (*service.Log
 		return f.adminLoginFn(ctx, u, p)
 	}
 	return &service.LoginResult{AccessToken: "admin-tok", ExpiresIn: 7200, Role: "admin"}, nil
+}
+func (f *fakeAuthSvc) ListActiveCodes(ctx context.Context) ([]repository.ActiveCode, error) {
+	if f.listActiveCodesFn != nil {
+		return f.listActiveCodesFn(ctx)
+	}
+	return []repository.ActiveCode{{Phone: "13800138000", Code: "123456", ExpireIn: 120}}, nil
 }
 
 // newAuthHandlerEngine builds a gin engine with the TraceID middleware and
@@ -113,6 +121,19 @@ func newAuthHandlerEngine(svc *fakeAuthSvc) *gin.Engine {
 			return
 		}
 		Success(c, res)
+	})
+	adminMG := engine.Group("/api/v1/admin")
+	adminMG.GET("/auth/sms-codes", func(c *gin.Context) {
+		codes, err := svc.ListActiveCodes(c.Request.Context())
+		if err != nil {
+			Error(c, err)
+			return
+		}
+		Success(c, ListActiveCodesResponse{Codes: codes, Total: len(codes)})
+	})
+	adminMG.GET("/get-async-routes", func(c *gin.Context) {
+		h := &AuthHandler{}
+		h.GetAsyncRoutes(c)
 	})
 	return engine
 }
@@ -228,6 +249,39 @@ func TestHandler_AdminLogin_Disabled(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, rr.Code)
 	body := decodeResponse(t, rr)
 	assert.Equal(t, float64(apperrors.ErrAdminDisabled), body["code"])
+}
+
+func TestHandler_ListActiveCodes_Success(t *testing.T) {
+	engine := newAuthHandlerEngine(&fakeAuthSvc{})
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/admin/auth/sms-codes", nil)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := decodeResponse(t, rr)
+	data := body["data"].(map[string]any)
+	codes := data["codes"].([]any)
+	assert.Len(t, codes, 1)
+	assert.Equal(t, float64(1), data["total"])
+}
+
+func TestHandler_ListActiveCodes_Empty(t *testing.T) {
+	svc := &fakeAuthSvc{listActiveCodesFn: func(_ context.Context) ([]repository.ActiveCode, error) {
+		return []repository.ActiveCode{}, nil
+	}}
+	engine := newAuthHandlerEngine(svc)
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/admin/auth/sms-codes", nil)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := decodeResponse(t, rr)
+	data := body["data"].(map[string]any)
+	assert.Equal(t, float64(0), data["total"])
+}
+
+func TestHandler_GetAsyncRoutes_Success(t *testing.T) {
+	engine := newAuthHandlerEngine(&fakeAuthSvc{})
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/admin/get-async-routes", nil)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := decodeResponse(t, rr)
+	data := body["data"].(map[string]any)
+	routes := data["routes"].([]any)
+	assert.Greater(t, len(routes), 0)
 }
 
 // guard against unused imports when no test exercises them.

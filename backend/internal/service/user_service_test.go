@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"strings"
 	"testing"
@@ -258,4 +259,125 @@ func TestSetBlacklist_RepoError(t *testing.T) {
 	var ae *apperrors.AppError
 	require.ErrorAs(t, err, &ae)
 	assert.Equal(t, apperrors.ErrInternal, ae.Code)
+}
+
+// --- Admin user CRUD ---
+
+func TestCreateUser_Success(t *testing.T) {
+	ur := &mockUserRepo{
+		CreateAdminFn: func(_ context.Context, _ repository.DBTX, phone, nickname string, userType int8) (int64, error) {
+			return 42, nil
+		},
+		FindByIDFn: func(_ context.Context, _ repository.DBTX, id int64) (*models.User, error) {
+			return &models.User{ID: id, Phone: "13800138000", Nickname: "alice", UserType: models.UserTypeNormal, CreditScore: 100}, nil
+		},
+	}
+	svc := NewUserService(ur, &mockRunnerAppRepo{}, nil)
+	dto, err := svc.CreateUser(context.Background(), CreateUserRequest{Phone: "13800138000", Nickname: "alice", UserType: models.UserTypeNormal})
+	require.NoError(t, err)
+	assert.Equal(t, int64(42), dto.ID)
+	assert.Equal(t, "13800138000", dto.Phone)
+}
+
+func TestCreateUser_InvalidPhone(t *testing.T) {
+	svc := NewUserService(&mockUserRepo{}, &mockRunnerAppRepo{}, nil)
+	_, err := svc.CreateUser(context.Background(), CreateUserRequest{Phone: "123", Nickname: "x"})
+	requireAppErr(t, err, apperrors.ErrPhoneFormat)
+}
+
+func TestCreateUser_NicknameTooLong(t *testing.T) {
+	svc := NewUserService(&mockUserRepo{}, &mockRunnerAppRepo{}, nil)
+	long := strings.Repeat("字", 51)
+	_, err := svc.CreateUser(context.Background(), CreateUserRequest{Phone: "13800138000", Nickname: long})
+	requireAppErr(t, err, apperrors.ErrNicknameTooLong)
+}
+
+func TestCreateUser_DuplicatePhone(t *testing.T) {
+	ur := &mockUserRepo{
+		CreateAdminFn: func(_ context.Context, _ repository.DBTX, _, _ string, _ int8) (int64, error) {
+			return 0, errors.New("Duplicate entry '13800138000' for key 'phone'")
+		},
+	}
+	svc := NewUserService(ur, &mockRunnerAppRepo{}, nil)
+	_, err := svc.CreateUser(context.Background(), CreateUserRequest{Phone: "13800138000", Nickname: "x"})
+	requireAppErr(t, err, apperrors.ErrPhoneExists)
+}
+
+func TestGetUserDetail_Success(t *testing.T) {
+	ur := &mockUserRepo{FindByIDFn: func(_ context.Context, _ repository.DBTX, id int64) (*models.User, error) {
+		return &models.User{ID: id, Phone: "13800138000", Nickname: "alice", UserType: models.UserTypeNormal, CreditScore: 100}, nil
+	}}
+	svc := NewUserService(ur, &mockRunnerAppRepo{}, nil)
+	dto, err := svc.GetUserDetail(context.Background(), 1)
+	require.NoError(t, err)
+	assert.Equal(t, "13800138000", dto.Phone) // admin sees raw phone
+}
+
+func TestGetUserDetail_NotFound(t *testing.T) {
+	svc := NewUserService(&mockUserRepo{}, &mockRunnerAppRepo{}, nil)
+	_, err := svc.GetUserDetail(context.Background(), 999)
+	requireAppErr(t, err, apperrors.ErrUserNotFound)
+}
+
+func TestListUsers_Success(t *testing.T) {
+	ur := &mockUserRepo{ListUsersFn: func(_ context.Context, _ repository.DBTX, _ repository.UserListFilter) ([]*models.User, int64, error) {
+		return []*models.User{
+			{ID: 1, Phone: "13800138000", Nickname: "alice"},
+			{ID: 2, Phone: "13900139000", Nickname: "bob"},
+		}, 2, nil
+	}}
+	svc := NewUserService(ur, &mockRunnerAppRepo{}, nil)
+	res, err := svc.ListUsers(context.Background(), AdminUserListFilter{Page: 1, PageSize: 20})
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), res.Total)
+	require.Len(t, res.Items, 2)
+	assert.Equal(t, "13800138000", res.Items[0].Phone) // unmasked
+}
+
+func TestUpdateUser_Success(t *testing.T) {
+	current := &models.User{ID: 1, Phone: "13800138000", Nickname: "old", UserType: models.UserTypeNormal, CreditScore: 100}
+	ur := &mockUserRepo{
+		FindByIDFn: func(_ context.Context, _ repository.DBTX, id int64) (*models.User, error) {
+			return current, nil
+		},
+		UpdateUserFn: func(_ context.Context, _ repository.DBTX, _ int64, cols []string, args []any) error {
+			for i, col := range cols {
+				switch col {
+				case "nickname":
+					current.Nickname = args[i].(string)
+				}
+			}
+			return nil
+		},
+	}
+	svc := NewUserService(ur, &mockRunnerAppRepo{}, nil)
+	newNick := "new-name"
+	dto, err := svc.UpdateUser(context.Background(), 1, UpdateUserRequest{Nickname: &newNick})
+	require.NoError(t, err)
+	assert.Equal(t, "new-name", dto.Nickname)
+}
+
+func TestUpdateUser_NotFound(t *testing.T) {
+	svc := NewUserService(&mockUserRepo{}, &mockRunnerAppRepo{}, nil)
+	n := "x"
+	_, err := svc.UpdateUser(context.Background(), 999, UpdateUserRequest{Nickname: &n})
+	requireAppErr(t, err, apperrors.ErrUserNotFound)
+}
+
+func TestDeleteUser_Success(t *testing.T) {
+	ur := &mockUserRepo{DeleteUserFn: func(_ context.Context, _ repository.DBTX, _ int64) error {
+		return nil
+	}}
+	svc := NewUserService(ur, &mockRunnerAppRepo{}, nil)
+	err := svc.DeleteUser(context.Background(), 1)
+	require.NoError(t, err)
+}
+
+func TestDeleteUser_NotFound(t *testing.T) {
+	ur := &mockUserRepo{DeleteUserFn: func(_ context.Context, _ repository.DBTX, _ int64) error {
+		return sql.ErrNoRows
+	}}
+	svc := NewUserService(ur, &mockRunnerAppRepo{}, nil)
+	err := svc.DeleteUser(context.Background(), 999)
+	requireAppErr(t, err, apperrors.ErrUserNotFound)
 }

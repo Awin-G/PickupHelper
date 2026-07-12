@@ -358,11 +358,46 @@ func (m *mockSMSProvider) GenerateCode() string {
 	return "123456"
 }
 
+// --- mockStationRepo ---
+
+type mockStationRepo struct {
+	ListFn    func(ctx context.Context, db repository.DBTX, filter repository.StationFilter) ([]*models.Station, int64, error)
+	FindByIDFn func(ctx context.Context, db repository.DBTX, id int64) (*models.Station, error)
+	CreateFn  func(ctx context.Context, db repository.DBTX, s *models.Station) (int64, error)
+	UpdateFn  func(ctx context.Context, db repository.DBTX, id int64, cols []string, args []any) error
+}
+
+func (m *mockStationRepo) List(ctx context.Context, db repository.DBTX, filter repository.StationFilter) ([]*models.Station, int64, error) {
+	if m.ListFn != nil {
+		return m.ListFn(ctx, db, filter)
+	}
+	return nil, 0, nil
+}
+func (m *mockStationRepo) FindByID(ctx context.Context, db repository.DBTX, id int64) (*models.Station, error) {
+	if m.FindByIDFn != nil {
+		return m.FindByIDFn(ctx, db, id)
+	}
+	return nil, sql.ErrNoRows
+}
+func (m *mockStationRepo) Create(ctx context.Context, db repository.DBTX, s *models.Station) (int64, error) {
+	if m.CreateFn != nil {
+		return m.CreateFn(ctx, db, s)
+	}
+	return 1, nil
+}
+func (m *mockStationRepo) Update(ctx context.Context, db repository.DBTX, id int64, cols []string, args []any) error {
+	if m.UpdateFn != nil {
+		return m.UpdateFn(ctx, db, id, cols, args)
+	}
+	return nil
+}
+
 // Compile-time assertions that mocks satisfy the interfaces.
 var (
 	_ repository.UserRepo      = (*mockUserRepo)(nil)
 	_ repository.AdminRepo     = (*mockAdminRepo)(nil)
 	_ repository.RunnerAppRepo = (*mockRunnerAppRepo)(nil)
 	_ repository.SMSCodeCache  = (*mockSMSCodeCache)(nil)
+	_ repository.StationRepo   = (*mockStationRepo)(nil)
 	_ SMSProvider              = (*mockSMSProvider)(nil)
 )
