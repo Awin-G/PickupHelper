@@ -189,6 +189,36 @@ make vet-integration
 
 ---
 
+## 9. 生产部署信息
+
+| 项目 | 详情 |
+|------|------|
+| 服务器 | `pickup.awin-x.top`（SSH 端口 `622`，用户 `root`） |
+| OS | Linux 5.4.0-28-generic x86_64 (Ubuntu) |
+| 后端二进制 | `/usr/local/bin/pickup-server` |
+| 后端配置 | `/etc/pickup/configs/config.prod.yaml` |
+| 后端工作目录 | `/etc/pickup` |
+| 数据库迁移 | `/etc/pickup/migrations/` |
+| 前端静态文件 | `/var/www/pickup/` |
+| systemd 服务 | `pickup.service`（`/etc/systemd/system/pickup.service`） |
+| 服务端口 | 18080（健康检查 `http://localhost:18080/health` ✅） |
+| MySQL | 127.0.0.1:3306，库 `pickup_helper`，用户 `pickup` |
+| Redis | 127.0.0.1:6379，db 0 |
+
+**部署步骤**（本地开发机执行）：
+```bash
+# 1. 编译
+cd backend && GOOS=linux GOARCH=amd64 go build -o pickup-server ./cmd/server/
+
+# 2. 上传
+scp -P 622 pickup-server root@pickup.awin-x.top:/usr/local/bin/pickup-server
+
+# 3. 重启
+ssh -p 622 root@pickup.awin-x.top "systemctl restart pickup"
+```
+
+---
+
 ## 5. Git 工作流（必读）
 
 ### 分支模型
