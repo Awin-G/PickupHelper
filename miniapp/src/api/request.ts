@@ -53,9 +53,19 @@ function buildUrl(url: string, params?: Record<string, any>): string {
 let isRefreshing = false;
 let refreshQueue: Array<() => void> = [];
 
+function redirectToLogin() {
+  storage.remove('token');
+  storage.remove('refresh_token');
+  storage.remove('currentRole');
+  Taro.reLaunch({ url: '/pages/login/index' });
+}
+
 async function tryRefreshToken(): Promise<boolean> {
   const refreshToken = storage.get<string>('refresh_token');
-  if (!refreshToken) return false;
+  if (!refreshToken) {
+    redirectToLogin();
+    return false;
+  }
 
   if (isRefreshing) {
     return new Promise((resolve) => {
@@ -79,8 +89,10 @@ async function tryRefreshToken(): Promise<boolean> {
       refreshQueue = [];
       return true;
     }
+    redirectToLogin();
     return false;
   } catch {
+    redirectToLogin();
     return false;
   } finally {
     isRefreshing = false;
@@ -123,6 +135,8 @@ export async function request<T>(config: RequestConfig): Promise<T> {
       if (body.code === API_ERROR_CODE.TOKEN_EXPIRED) {
         const refreshed = await tryRefreshToken();
         if (refreshed) return request<T>(config);
+        redirectToLogin();
+        throw new BusinessError(body.code, body.msg);
       }
       throw new BusinessError(body.code, body.msg);
     }

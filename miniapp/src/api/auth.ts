@@ -55,6 +55,14 @@ export const authApi = {
       data,
     }),
 
+  /** 申请成为跑腿员 */
+  applyRunner: (data: { real_name: string; student_id?: string; id_card_image: string }) =>
+    request<{ application_id: number; status: number }>({
+      url: '/user/runner/apply',
+      method: 'POST',
+      data,
+    }),
+
   /** 上传头像 */
   uploadAvatar: async (filePath: string) => {
     const token = storage.get<string>('token');

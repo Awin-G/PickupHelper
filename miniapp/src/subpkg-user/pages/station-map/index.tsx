@@ -1,22 +1,27 @@
 import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@nutui/nutui-react-taro';
+import { stationApi } from '@/api/stations';
+import EmptyState from '@/components/EmptyState';
+import type { Station } from '@/api/types';
 import './index.scss';
 
-const MOCK_STATIONS = [
-  { id: 1, name: '南门菜鸟驿站', address: '学校南门左侧50米', distance: '350m', hours: '08:00-22:00' },
-  { id: 2, name: '北门驿站', address: '学校北门右侧100米', distance: '800m', hours: '09:00-21:00' },
-  { id: 3, name: '东门快递点', address: '学校东门对面', distance: '1.2km', hours: '08:30-20:00' },
-];
-
 export default function StationMapPage() {
-  const [stations] = useState(MOCK_STATIONS);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleNavigate = (station: typeof MOCK_STATIONS[0]) => {
+  useEffect(() => {
+    stationApi.list()
+      .then(setStations)
+      .catch(() => Taro.showToast({ title: '获取驿站列表失败', icon: 'none' }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleNavigate = (station: Station) => {
     Taro.showModal({
       title: station.name,
-      content: `地址：${station.address}\n营业时间：${station.hours}`,
+      content: `地址：${station.address}${station.hours ? '\n营业时间：' + station.hours : ''}`,
       confirmText: '导航',
       success: (res) => {
         if (res.confirm) {
@@ -26,6 +31,10 @@ export default function StationMapPage() {
     });
   };
 
+  if (!loading && stations.length === 0) {
+    return <EmptyState title='暂无驿站信息' />;
+  }
+
   return (
     <View className='station-map'>
       <View className='station-map__list'>
@@ -33,10 +42,10 @@ export default function StationMapPage() {
           <View key={s.id} className='station-map__card'>
             <View className='station-map__card-header'>
               <Text className='station-map__name'>{s.name}</Text>
-              <Text className='station-map__distance'>{s.distance}</Text>
+              {s.distance && <Text className='station-map__distance'>{s.distance}</Text>}
             </View>
             <Text className='station-map__address'>{s.address}</Text>
-            <Text className='station-map__hours'>营业时间: {s.hours}</Text>
+            {s.hours && <Text className='station-map__hours'>营业时间: {s.hours}</Text>}
             <View className='station-map__card-footer'>
               <Button
                 type='primary'
