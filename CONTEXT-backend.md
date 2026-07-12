@@ -201,7 +201,9 @@ make vet-integration
 | 数据库迁移 | `/etc/pickup/migrations/` |
 | 前端静态文件 | `/var/www/pickup/` |
 | systemd 服务 | `pickup.service`（`/etc/systemd/system/pickup.service`） |
-| 服务端口 | 18080（健康检查 `http://localhost:18080/health` ✅） |
+| 后端监听 | `127.0.0.1:18080`（仅本地回环，不直接对外） |
+| 反向代理 | Nginx（`/etc/nginx/sites-enabled/pickup`）— 终止 TLS，转发 `/api/` → `127.0.0.1:18080`，静态文件 → `/var/www/pickup` |
+| 公网入口 | `https://pickup.awin-x.top`（Let's Encrypt SSL） |
 | MySQL | 127.0.0.1:3306，库 `pickup_helper`，用户 `pickup` |
 | Redis | 127.0.0.1:6379，db 0 |
 
