@@ -1,0 +1,56 @@
+import { $t } from "@/plugins/i18n";
+const Layout = () => import("@/layout/index.vue");
+
+export default [
+  {
+    path: "/login",
+    name: "Login",
+    component: () => import("@/views/login/index.vue"),
+    meta: {
+      title: $t("menus.pureLogin"),
+      showLink: false
+    }
+  },
+  {
+    path: "/access-denied",
+    name: "AccessDenied",
+    component: () => import("@/views/error/403.vue"),
+    meta: {
+      title: $t("menus.pureAccessDenied"),
+      showLink: false
+    }
+  },
+  {
+    path: "/server-error",
+    name: "ServerError",
+    component: () => import("@/views/error/500.vue"),
+    meta: {
+      title: $t("menus.pureServerError"),
+      showLink: false
+    }
+  },
+  {
+    path: "/redirect",
+    component: Layout,
+    meta: {
+      title: $t("status.pureLoad"),
+      showLink: false
+    },
+    children: [
+      {
+        path: "/redirect/:path(.*)",
+        name: "Redirect",
+        component: () => import("@/layout/redirect.vue")
+      }
+    ]
+  },
+  {
+    path: "/account-settings",
+    name: "AccountSettings",
+    component: () => import("@/views/account-settings/index.vue"),
+    meta: {
+      title: $t("buttons.pureAccountSettings"),
+      showLink: false
+    }
+  }
+] satisfies Array<RouteConfigsTable>;

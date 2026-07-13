@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>货架管理 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #304156; color: #fff; padding-top: 20px; }
+    .sidebar-logo { padding: 0 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.3s; }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    .header { height: 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 布局 */
+    .shelf-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 24px;
+    }
+    
+    /* 货架可视化 */
+    .shelf-visual {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .shelf-visual h3 {
+      font-size: 16px;
+      color: #303133;
+      margin-bottom: 16px;
+    }
+    .shelf-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .shelf-item {
+      aspect-ratio: 1;
+      border: 2px solid #e4e7ed;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .shelf-item:hover { border-color: #409eff; transform: translateY(-2px); }
+    .shelf-item.selected { border-color: #409eff; box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2); }
+    .shelf-item.empty { background: #f5f7fa; }
+    .shelf-item.low { background: #f0f9eb; border-color: #67c23a; }
+    .shelf-item.medium { background: #fdf6ec; border-color: #e6a23c; }
+    .shelf-item.high { background: #fef0f0; border-color: #f56c6c; }
+    .shelf-code { font-weight: 600; font-size: 14px; color: #303133; }
+    .shelf-capacity { font-size: 12px; color: #909399; }
+    .shelf-rate {
+      height: 4px;
+      background: #e4e7ed;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .shelf-rate-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+    .shelf-rate-bar.low { background: #67c23a; }
+    .shelf-rate-bar.medium { background: #e6a23c; }
+    .shelf-rate-bar.high { background: #f56c6c; }
+    
+    /* 图例 */
+    .legend {
+      display: flex;
+      gap: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #ebeef5;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #606266;
+    }
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+    .legend-color.empty { background: #f5f7fa; border: 1px solid #e4e7ed; }
+    .legend-color.low { background: #f0f9eb; }
+    .legend-color.medium { background: #fdf6ec; }
+    .legend-color.high { background: #fef0f0; }
+    
+    /* 货架详情 */
+    .shelf-detail {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .shelf-detail h3 {
+      font-size: 16px;
+      color: #303133;
+      margin-bottom: 16px;
+    }
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #ebeef5;
+    }
+    .detail-item:last-child { border-bottom: none; }
+    .detail-label { color: #909399; font-size: 14px; }
+    .detail-value { color: #303133; font-size: 14px; font-weight: 500; }
+    .detail-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    /* 货架列表 */
+    .shelf-list {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      margin-top: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .shelf-list h3 {
+      font-size: 16px;
+      color: #303133;
+      margin-bottom: 16px;
+    }
+    .list-table { width: 100%; border-collapse: collapse; }
+    .list-table th, .list-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ebeef5;
+    }
+    .list-table th {
+      background: #f5f7fa;
+      color: #909399;
+      font-weight: 500;
+    }
+    .capacity-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .capacity-tag.low { background: #f0f9eb; color: #67c23a; }
+    .capacity-tag.medium { background: #fdf6ec; color: #e6a23c; }
+    .capacity-tag.high { background: #fef0f0; color: #f56c6c; }
+    .capacity-tag.full { background: #f56c6c; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item"><span class="icon">🏠</span><span>工作台</span></div>
+        <div class="menu-item"><span class="icon">📦</span><span>包裹管理</span></div>
+        <div class="menu-item"><span class="icon">✅</span><span>出库核销</span></div>
+        <div class="menu-item active"><span class="icon">🗄️</span><span>货架管理</span></div>
+        <div class="menu-item"><span class="icon">🚚</span><span>代取订单</span></div>
+        <div class="menu-item"><span class="icon">👥</span><span>用户管理</span></div>
+        <div class="menu-item"><span class="icon">📊</span><span>数据统计</span></div>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <header class="header">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>货架管理</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="header-right">
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <div class="content">
+        <div class="page-header">
+          <h2>货架管理</h2>
+          <el-button type="primary">+ 新增货架</el-button>
+        </div>
+        
+        <div class="shelf-layout">
+          <!-- 左侧：货架可视化 -->
+          <div>
+            <div class="shelf-visual">
+              <h3>货架布局</h3>
+              
+              <div class="shelf-grid">
+                <div class="shelf-item selected">
+                  <div class="shelf-code">A-01</div>
+                  <div class="shelf-capacity">8/10</div>
+                  <div class="shelf-rate">
+                    <div class="shelf-rate-bar medium" style="width: 80%;"></div>
+                  </div>
+                </div>
+                <div class="shelf-item low">
+                  <div class="shelf-code">A-02</div>
+                  <div class="shelf-capacity">3/10</div>
+                  <div class="shelf-rate">
+                    <div class="shelf-rate-bar low" style="width: 30%;"></div>
+                  </div>
+                </div>
+                <div class="shelf-item empty">
+                  <div class="shelf-code">A-03</div>
+                  <div class="shelf-capacity">0/10</div>
+                  <div class="shelf-rate">
+                    <div class="shelf-rate-bar low" style="width: 0%;"></div>
+                  </div>
+                </div>
+                <div class="shelf-item low">
+                  <div class="shelf-code">A-04</div>
+                  <div class="shelf-capacity">2/10</div>
+                  <div class="shelf-rate">
+                    <div class="shelf-rate-bar low" style="width: 20%;"></div>
+                  </div>
+                </div>
+                
+                <div class="shelf-item high">
+                  <div class="shelf-code">B-01</div>
+                  <div class="shelf-capacity">10/10</div>
+                  <div class="shelf-rate">
+                    <div class="shelf-rate-bar high" style="width: 100%;"></div>
+                  </div>
+                </div>
+                <div class="shelf-item medium">
+                  <div class="shelf-code">B-02</div>
+                  <div class="shelf-capacity">6/10</div>
+                  <div class="shelf-rate">
+                    <div class="shelf-rate-bar medium" style="width: 60%;"></div>
+                  </div>
+                </div>
+                <div class="shelf-item low">
+                  <div class="shelf-code">B-03</div>
+                  <div class="shelf-capacity">4/10</div>
+                  <div class="shelf-rate">
+                    <div class="shelf-rate-bar low" style="width: 40%;"></div>
+                  </div>
+                </div>
+                <div class="shelf-item medium">
+                  <div class="shelf-code">B-04</div>
+                  <div class="shelf-capacity">7/10</div>
+                  <div class="shelf-rate">
+                    <div class="shelf-rate-bar medium" style="width: 70%;"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="legend">
+                <div class="legend-item">
+                  <div class="legend-color empty"></div>
+                  <span>空置 (0%)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color low"></div>
+                  <span>空闲 (<50%)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color medium"></div>
+                  <span>一般 (50-80%)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color high"></div>
+                  <span>满载 (>80%)</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 货架列表 -->
+            <div class="shelf-list">
+              <h3>货架列表</h3>
+              <table class="list-table">
+                <thead>
+                  <tr>
+                    <th>编号</th>
+                    <th>位置</th>
+                    <th>当前占用</th>
+                    <th>容量</th>
+                    <th>占用率</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>A-01</strong></td>
+                    <td>A区 1排</td>
+                    <td>8</td>
+                    <td>10</td>
+                    <td><span class="capacity-tag medium">80%</span></td>
+                    <td>
+                      <el-button type="primary" link size="small">编辑</el-button>
+                      <el-button type="primary" link size="small">查看包裹</el-button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>A-02</strong></td>
+                    <td>A区 2排</td>
+                    <td>3</td>
+                    <td>10</td>
+                    <td><span class="capacity-tag low">30%</span></td>
+                    <td>
+                      <el-button type="primary" link size="small">编辑</el-button>
+                      <el-button type="primary" link size="small">查看包裹</el-button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>B-01</strong></td>
+                    <td>B区 1排</td>
+                    <td>10</td>
+                    <td>10</td>
+                    <td><span class="capacity-tag full">100%</span></td>
+                    <td>
+                      <el-button type="primary" link size="small">编辑</el-button>
+                      <el-button type="primary" link size="small">查看包裹</el-button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- 右侧：货架详情 -->
+          <div class="shelf-detail">
+            <h3>货架详情</h3>
+            
+            <div class="detail-item">
+              <span class="detail-label">货架编号</span>
+              <span class="detail-value">A-01</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">所属区域</span>
+              <span class="detail-value">A区</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">位置</span>
+              <span class="detail-value">1排 1列</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">当前占用</span>
+              <span class="detail-value" style="color: #e6a23c;">8 件</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">最大容量</span>
+              <span class="detail-value">10 件</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">占用率</span>
+              <span class="detail-value">80%</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">备注</span>
+              <span class="detail-value">-</span>
+            </div>
+            
+            <div class="detail-actions">
+              <el-button type="primary" style="flex: 1;">编辑货架</el-button>
+              <el-button style="flex: 1;">查看包裹</el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({});
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>

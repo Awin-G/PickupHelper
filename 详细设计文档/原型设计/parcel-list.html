@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>包裹列表 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #304156; color: #fff; padding-top: 20px; }
+    .sidebar-logo { padding: 0 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.3s; }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    .submenu { padding-left: 50px; }
+    .submenu .menu-item { padding: 8px 20px; font-size: 14px; }
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    .header { height: 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 筛选区域 */
+    .filter-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .filter-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filter-item { display: flex; flex-direction: column; gap: 6px; }
+    .filter-item label { font-size: 13px; color: #606266; }
+    .filter-actions { display: flex; gap: 8px; margin-left: auto; }
+    
+    /* 表格区域 */
+    .table-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .table-header h3 { font-size: 16px; color: #303133; }
+    .table-actions { display: flex; gap: 8px; }
+    
+    .status-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-pending { background: #ecf5ff; color: #409eff; }
+    .status-picked { background: #f0f9eb; color: #67c23a; }
+    .status-delayed { background: #fdf6ec; color: #e6a23c; }
+    .status-returned { background: #f4f4f5; color: #909399; }
+    .status-abnormal { background: #fef0f0; color: #f56c6c; }
+    
+    .pickup-code {
+      display: inline-block;
+      padding: 2px 6px;
+      background: #ecf5ff;
+      color: #409eff;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #ebeef5;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item"><span class="icon">🏠</span><span>工作台</span></div>
+        <div class="menu-item active"><span class="icon">📦</span><span>包裹管理</span></div>
+        <div class="submenu">
+          <div class="menu-item"><span>包裹入库</span></div>
+          <div class="menu-item active"><span>包裹列表</span></div>
+          <div class="menu-item"><span>批量导入</span></div>
+        </div>
+        <div class="menu-item"><span class="icon">✅</span><span>出库核销</span></div>
+        <div class="menu-item"><span class="icon">🗄️</span><span>货架管理</span></div>
+        <div class="menu-item"><span class="icon">🚚</span><span>代取订单</span></div>
+        <div class="menu-item"><span class="icon">👥</span><span>用户管理</span></div>
+        <div class="menu-item"><span class="icon">📊</span><span>数据统计</span></div>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <header class="header">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>包裹管理</el-breadcrumb-item>
+          <el-breadcrumb-item>包裹列表</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="header-right">
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <div class="content">
+        <div class="page-header">
+          <h2>包裹列表</h2>
+        </div>
+        
+        <!-- 筛选区域 -->
+        <div class="filter-card">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label>搜索</label>
+              <el-input placeholder="单号/手机号" style="width: 200px;" />
+            </div>
+            <div class="filter-item">
+              <label>状态</label>
+              <el-select placeholder="全部状态" style="width: 140px;" clearable>
+                <el-option label="待取件" value="1" />
+                <el-option label="已取件" value="2" />
+                <el-option label="滞留" value="3" />
+                <el-option label="已退件" value="4" />
+                <el-option label="异常" value="5" />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label>快递公司</label>
+              <el-select placeholder="全部公司" style="width: 140px;" clearable>
+                <el-option label="顺丰速运" value="sf" />
+                <el-option label="圆通速递" value="yt" />
+                <el-option label="中通快递" value="zt" />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label>货架</label>
+              <el-select placeholder="全部货架" style="width: 140px;" clearable>
+                <el-option label="A-01" value="A-01" />
+                <el-option label="A-02" value="A-02" />
+                <el-option label="B-01" value="B-01" />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label>入库时间</label>
+              <el-date-picker type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 260px;" />
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary">查询</el-button>
+              <el-button>重置</el-button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 表格区域 -->
+        <div class="table-card">
+          <div class="table-header">
+            <h3>包裹列表 <span style="color: #909399; font-size: 14px;">共 156 条</span></h3>
+            <div class="table-actions">
+              <el-button type="primary" plain>批量出库</el-button>
+              <el-button type="warning" plain>标记滞留</el-button>
+              <el-button type="danger" plain>标记异常</el-button>
+            </div>
+          </div>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f7fa;">
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">
+                  <input type="checkbox">
+                </th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">快递单号</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">快递公司</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">收件人</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">货架</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">取件码</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">状态</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">入库时间</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><input type="checkbox"></td>
+                <td style="padding: 12px;">SF1234567890</td>
+                <td style="padding: 12px;">顺丰速运</td>
+                <td style="padding: 12px;">138****0000</td>
+                <td style="padding: 12px;">A-01</td>
+                <td style="padding: 12px;"><span class="pickup-code">852741</span></td>
+                <td style="padding: 12px;"><span class="status-tag status-pending">待取件</span></td>
+                <td style="padding: 12px;">2024-01-15 10:30</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                  <el-button type="primary" link size="small">出库</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><input type="checkbox"></td>
+                <td style="padding: 12px;">YT9876543210</td>
+                <td style="padding: 12px;">圆通速递</td>
+                <td style="padding: 12px;">139****1111</td>
+                <td style="padding: 12px;">B-02</td>
+                <td style="padding: 12px;"><span class="pickup-code">369258</span></td>
+                <td style="padding: 12px;"><span class="status-tag status-pending">待取件</span></td>
+                <td style="padding: 12px;">2024-01-15 10:25</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                  <el-button type="primary" link size="small">出库</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><input type="checkbox"></td>
+                <td style="padding: 12px;">ZTO111222333</td>
+                <td style="padding: 12px;">中通快递</td>
+                <td style="padding: 12px;">137****2222</td>
+                <td style="padding: 12px;">A-02</td>
+                <td style="padding: 12px;"><span class="pickup-code">147852</span></td>
+                <td style="padding: 12px;"><span class="status-tag status-picked">已取件</span></td>
+                <td style="padding: 12px;">2024-01-15 10:20</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><input type="checkbox"></td>
+                <td style="padding: 12px;">YD444555666</td>
+                <td style="padding: 12px;">韵达快递</td>
+                <td style="padding: 12px;">136****3333</td>
+                <td style="padding: 12px;">C-01</td>
+                <td style="padding: 12px;"><span class="pickup-code">951753</span></td>
+                <td style="padding: 12px;"><span class="status-tag status-delayed">滞留</span></td>
+                <td style="padding: 12px;">2024-01-12 14:30</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                  <el-button type="danger" link size="small">退件</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;"><input type="checkbox"></td>
+                <td style="padding: 12px;">JT777888999</td>
+                <td style="padding: 12px;">极兔速递</td>
+                <td style="padding: 12px;">135****4444</td>
+                <td style="padding: 12px;">A-01</td>
+                <td style="padding: 12px;"><span class="pickup-code">258369</span></td>
+                <td style="padding: 12px;"><span class="status-tag status-abnormal">异常</span></td>
+                <td style="padding: 12px;">2024-01-14 09:15</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                  <el-button type="warning" link size="small">处理</el-button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div class="pagination">
+            <el-pagination
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="156"
+              :page-sizes="[10, 20, 50, 100]"
+              :page-size="20"
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({});
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>

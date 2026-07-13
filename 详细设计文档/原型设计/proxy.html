@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代取订单 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #304156; color: #fff; padding-top: 20px; }
+    .sidebar-logo { padding: 0 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.3s; }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    .header { height: 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 状态统计 */
+    .status-stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-item {
+      flex: 1;
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .stat-item:hover { transform: translateY(-2px); }
+    .stat-item.active { border: 2px solid #409eff; }
+    .stat-item .count { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+    .stat-item .label { font-size: 13px; color: #909399; }
+    .stat-item.pending .count { color: #409eff; }
+    .stat-item.delivering .count { color: #e6a23c; }
+    .stat-item.confirming .count { color: #909399; }
+    .stat-item.completed .count { color: #67c23a; }
+    .stat-item.cancelled .count { color: #909399; }
+    
+    /* 筛选区域 */
+    .filter-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .filter-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filter-item { display: flex; flex-direction: column; gap: 6px; }
+    .filter-item label { font-size: 13px; color: #606266; }
+    .filter-actions { display: flex; gap: 8px; margin-left: auto; }
+    
+    /* 表格区域 */
+    .table-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    
+    .status-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-waiting { background: #ecf5ff; color: #409eff; }
+    .status-delivering { background: #fdf6ec; color: #e6a23c; }
+    .status-confirming { background: #f4f4f5; color: #909399; }
+    .status-completed { background: #f0f9eb; color: #67c23a; }
+    .status-cancelled { background: #f4f4f5; color: #909399; }
+    .status-failed { background: #fef0f0; color: #f56c6c; }
+    
+    .reward-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #fdf6ec;
+      color: #e6a23c;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #ebeef5;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item"><span class="icon">🏠</span><span>工作台</span></div>
+        <div class="menu-item"><span class="icon">📦</span><span>包裹管理</span></div>
+        <div class="menu-item"><span class="icon">✅</span><span>出库核销</span></div>
+        <div class="menu-item"><span class="icon">🗄️</span><span>货架管理</span></div>
+        <div class="menu-item active"><span class="icon">🚚</span><span>代取订单</span></div>
+        <div class="menu-item"><span class="icon">👥</span><span>用户管理</span></div>
+        <div class="menu-item"><span class="icon">📊</span><span>数据统计</span></div>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <header class="header">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>代取订单</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="header-right">
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <div class="content">
+        <div class="page-header">
+          <h2>代取订单管理</h2>
+        </div>
+        
+        <!-- 状态统计 -->
+        <div class="status-stats">
+          <div class="stat-item pending">
+            <div class="count">5</div>
+            <div class="label">待接单</div>
+          </div>
+          <div class="stat-item delivering">
+            <div class="count">3</div>
+            <div class="label">配送中</div>
+          </div>
+          <div class="stat-item confirming">
+            <div class="count">1</div>
+            <div class="label">待确认</div>
+          </div>
+          <div class="stat-item completed">
+            <div class="count">120</div>
+            <div class="label">已完成</div>
+          </div>
+          <div class="stat-item cancelled">
+            <div class="count">8</div>
+            <div class="label">已取消</div>
+          </div>
+        </div>
+        
+        <!-- 筛选区域 -->
+        <div class="filter-card">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label>搜索</label>
+              <el-input placeholder="订单号/包裹单号" style="width: 200px;" />
+            </div>
+            <div class="filter-item">
+              <label>状态</label>
+              <el-select placeholder="全部状态" style="width: 140px;" clearable>
+                <el-option label="待接单" value="1" />
+                <el-option label="配送中" value="2" />
+                <el-option label="待确认" value="3" />
+                <el-option label="已完成" value="4" />
+                <el-option label="已取消" value="5" />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label>时间范围</label>
+              <el-date-picker type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 260px;" />
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary">查询</el-button>
+              <el-button>重置</el-button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 表格区域 -->
+        <div class="table-card">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f7fa;">
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">订单号</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">包裹单号</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">悬赏金额</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">发布者</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">跑腿员</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">状态</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">创建时间</th>
+                <th style="padding: 12px; text-align: left; font-weight: 500; color: #909399; border-bottom: 1px solid #ebeef5;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">PO20240115001</td>
+                <td style="padding: 12px;">SF1234567890</td>
+                <td style="padding: 12px;"><span class="reward-tag">¥5.00</span></td>
+                <td style="padding: 12px;">张三</td>
+                <td style="padding: 12px;">李四</td>
+                <td style="padding: 12px;"><span class="status-tag status-delivering">配送中</span></td>
+                <td style="padding: 12px;">2024-01-15 10:30</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">PO20240115002</td>
+                <td style="padding: 12px;">YT9876543210</td>
+                <td style="padding: 12px;"><span class="reward-tag">¥3.00</span></td>
+                <td style="padding: 12px;">王五</td>
+                <td style="padding: 12px;">-</td>
+                <td style="padding: 12px;"><span class="status-tag status-waiting">待接单</span></td>
+                <td style="padding: 12px;">2024-01-15 10:25</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">PO20240115003</td>
+                <td style="padding: 12px;">ZTO111222333</td>
+                <td style="padding: 12px;"><span class="reward-tag">¥8.00</span></td>
+                <td style="padding: 12px;">赵六</td>
+                <td style="padding: 12px;">钱七</td>
+                <td style="padding: 12px;"><span class="status-tag status-completed">已完成</span></td>
+                <td style="padding: 12px;">2024-01-15 09:30</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">PO20240115004</td>
+                <td style="padding: 12px;">YD444555666</td>
+                <td style="padding: 12px;"><span class="reward-tag">¥4.00</span></td>
+                <td style="padding: 12px;">孙八</td>
+                <td style="padding: 12px;">-</td>
+                <td style="padding: 12px;"><span class="status-tag status-waiting">待接单</span></td>
+                <td style="padding: 12px;">2024-01-15 09:20</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ebeef5;">
+                <td style="padding: 12px;">PO20240115005</td>
+                <td style="padding: 12px;">JT777888999</td>
+                <td style="padding: 12px;"><span class="reward-tag">¥6.00</span></td>
+                <td style="padding: 12px;">周九</td>
+                <td style="padding: 12px;">-</td>
+                <td style="padding: 12px;"><span class="status-tag status-cancelled">已取消</span></td>
+                <td style="padding: 12px;">2024-01-15 08:30</td>
+                <td style="padding: 12px;">
+                  <el-button type="primary" link size="small">详情</el-button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div class="pagination">
+            <el-pagination
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="137"
+              :page-sizes="[10, 20, 50]"
+              :page-size="20"
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({});
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>

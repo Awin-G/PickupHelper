@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据统计 - 快递代取与驿站管理系统</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #304156; color: #fff; padding-top: 20px; }
+    .sidebar-logo { padding: 0 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h3 { font-size: 16px; margin-bottom: 4px; }
+    .sidebar-logo p { font-size: 12px; opacity: 0.7; }
+    .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.3s; }
+    .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .menu-item.active { background: #409eff; }
+    .menu-item .icon { width: 20px; text-align: center; }
+    .submenu { padding-left: 50px; }
+    .submenu .menu-item { padding: 8px 20px; font-size: 14px; }
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    .header { height: 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+    .content { padding: 24px; flex: 1; overflow-y: auto; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; color: #303133; }
+    
+    /* 时间范围选择 */
+    .time-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .time-btn {
+      padding: 8px 16px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: #fff;
+    }
+    .time-btn:hover { border-color: #409eff; color: #409eff; }
+    .time-btn.active { border-color: #409eff; background: #409eff; color: #fff; }
+    
+    /* 图表区域 */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .chart-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .chart-card h3 {
+      font-size: 16px;
+      color: #303133;
+      margin-bottom: 16px;
+    }
+    .chart-placeholder {
+      height: 280px;
+      background: #f5f7fa;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #909399;
+    }
+    .chart-card.full { grid-column: 1 / -1; }
+    
+    /* 统计数据 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-item {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .stat-item .label {
+      font-size: 14px;
+      color: #909399;
+      margin-bottom: 8px;
+    }
+    .stat-item .value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #303133;
+    }
+    .stat-item .value.primary { color: #409eff; }
+    .stat-item .value.success { color: #67c23a; }
+    .stat-item .value.warning { color: #e6a23c; }
+    .stat-item .value.danger { color: #f56c6c; }
+    
+    /* 表格区域 */
+    .table-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .table-card h3 {
+      font-size: 16px;
+      color: #303133;
+      margin-bottom: 16px;
+    }
+    .list-table { width: 100%; border-collapse: collapse; }
+    .list-table th, .list-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ebeef5;
+    }
+    .list-table th {
+      background: #f5f7fa;
+      color: #909399;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h3>📦 快递驿站</h3>
+        <p>管理系统</p>
+      </div>
+      <nav>
+        <div class="menu-item"><span class="icon">🏠</span><span>工作台</span></div>
+        <div class="menu-item"><span class="icon">📦</span><span>包裹管理</span></div>
+        <div class="menu-item"><span class="icon">✅</span><span>出库核销</span></div>
+        <div class="menu-item"><span class="icon">🗄️</span><span>货架管理</span></div>
+        <div class="menu-item"><span class="icon">🚚</span><span>代取订单</span></div>
+        <div class="menu-item"><span class="icon">👥</span><span>用户管理</span></div>
+        <div class="menu-item active"><span class="icon">📊</span><span>数据统计</span></div>
+        <div class="submenu">
+          <div class="menu-item active"><span>数据概览</span></div>
+          <div class="menu-item"><span>快递公司对账</span></div>
+          <div class="menu-item"><span>代取财务</span></div>
+        </div>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <header class="header">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>数据统计</el-breadcrumb-item>
+          <el-breadcrumb-item>数据概览</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="header-right">
+          <div class="user-info">
+            <div class="user-avatar">管</div>
+            <span>管理员</span>
+          </div>
+        </div>
+      </header>
+      
+      <div class="content">
+        <div class="page-header">
+          <h2>数据概览</h2>
+        </div>
+        
+        <!-- 时间范围选择 -->
+        <div class="time-selector">
+          <div class="time-btn">今日</div>
+          <div class="time-btn active">近7天</div>
+          <div class="time-btn">近30天</div>
+          <div class="time-btn">自定义</div>
+          <el-date-picker type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="margin-left: 12px;" />
+        </div>
+        
+        <!-- 统计数据 -->
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="label">总入库量</div>
+            <div class="value primary">1,286</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">总出库量</div>
+            <div class="value success">1,198</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">当前滞留</div>
+            <div class="value warning">45</div>
+          </div>
+          <div class="stat-item">
+            <div class="label">代取订单</div>
+            <div class="value">156</div>
+          </div>
+        </div>
+        
+        <!-- 图表区域 -->
+        <div class="charts-row">
+          <div class="chart-card full">
+            <h3>包裹趋势（近7天）</h3>
+            <div class="chart-placeholder">
+              📈 此处放置ECharts折线图：入库量/出库量趋势
+            </div>
+          </div>
+        </div>
+        
+        <div class="charts-row">
+          <div class="chart-card">
+            <h3>代取财务统计</h3>
+            <div style="padding: 16px 0;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <span style="color: #909399;">总订单数</span>
+                <span style="font-weight: 600;">156</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <span style="color: #909399;">已完成</span>
+                <span style="font-weight: 600; color: #67c23a;">120</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <span style="color: #909399;">总悬赏金额</span>
+                <span style="font-weight: 600; color: #e6a23c;">¥580.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #909399;">平均悬赏</span>
+                <span style="font-weight: 600;">¥4.83</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="chart-card">
+            <h3>快递公司派件量TOP5</h3>
+            <div class="chart-placeholder">
+              📊 此处放置ECharts柱状图：各快递公司派件量
+            </div>
+          </div>
+        </div>
+        
+        <!-- 跑腿员收益排行 -->
+        <div class="table-card">
+          <h3>跑腿员收益排行（本月）</h3>
+          <table class="list-table">
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>跑腿员</th>
+                <th>完成单数</th>
+                <th>总收益</th>
+                <th>平均评分</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>李四</td>
+                <td>45</td>
+                <td style="color: #e6a23c; font-weight: 600;">¥225.00</td>
+                <td>⭐ 4.9</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>钱七</td>
+                <td>38</td>
+                <td style="color: #e6a23c; font-weight: 600;">¥190.00</td>
+                <td>⭐ 4.8</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>周八</td>
+                <td>32</td>
+                <td style="color: #e6a23c; font-weight: 600;">¥160.00</td>
+                <td>⭐ 4.7</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({});
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>
