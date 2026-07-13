@@ -42,7 +42,7 @@ export default function MinePage() {
   const hasAvatar = userInfo && userInfo.avatar;
 
   const menuItems = [
-    { icon: '📦', title: '我的代取订单', path: '/subpkg-proxy/pages/proxy-orders/index' },
+    { icon: '📦', title: '我的代取订单', path: '/pages/orders/index' },
     { icon: '🏃', title: '申请成为跑腿员', path: '/subpkg-user/pages/runner-apply/index' },
     { icon: '📍', title: '驿站导航', path: '/subpkg-user/pages/station-map/index' },
     { icon: '🔔', title: '消息中心', path: '/subpkg-user/pages/message-center/index' },
@@ -89,17 +89,20 @@ export default function MinePage() {
       )}
 
       <View className='mine-page__menu'>
-        {menuItems.map((item) => (
-          <View
-            key={item.path}
-            className='mine-page__menu-item'
-            onClick={() => Taro.navigateTo({ url: item.path })}
-          >
-            <Text className='mine-page__menu-icon'>{item.icon}</Text>
-            <Text className='mine-page__menu-text'>{item.title}</Text>
-            <Text className='mine-page__menu-arrow'>›</Text>
-          </View>
-        ))}
+        {menuItems.map((item) => {
+          const isTab = item.path.startsWith('/pages/orders');
+          return (
+            <View
+              key={item.path}
+              className='mine-page__menu-item'
+              onClick={() => isTab ? Taro.switchTab({ url: item.path }) : Taro.navigateTo({ url: item.path })}
+            >
+              <Text className='mine-page__menu-icon'>{item.icon}</Text>
+              <Text className='mine-page__menu-text'>{item.title}</Text>
+              <Text className='mine-page__menu-arrow'>›</Text>
+            </View>
+          );
+        })}
       </View>
 
       {userInfo && (
