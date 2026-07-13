@@ -1,6 +1,7 @@
 export default defineAppConfig({
   pages: [
     'pages/index/index',
+    'pages/orders/index',
     'pages/mine/index',
     'pages/login/index',
   ],
@@ -51,6 +52,12 @@ export default defineAppConfig({
         text: '包裹',
         iconPath: 'assets/icons/parcel.png',
         selectedIconPath: 'assets/icons/parcel-active.png',
+      },
+      {
+        pagePath: 'pages/orders/index',
+        text: '订单',
+        iconPath: 'assets/icons/orders.png',
+        selectedIconPath: 'assets/icons/orders-active.png',
       },
       {
         pagePath: 'pages/mine/index',

@@ -24,9 +24,9 @@ export default function ProfileEditPage() {
       await updateProfile({ avatar: result.avatar_url });
       Taro.hideLoading();
       Taro.showToast({ title: '头像已更新', icon: 'success' });
-    } catch {
+    } catch (err: any) {
       Taro.hideLoading();
-      Taro.showToast({ title: '上传失败', icon: 'none' });
+      Taro.showToast({ title: err.msg || err.message || '上传失败', icon: 'none', duration: 3000 });
     }
   };
 
@@ -44,8 +44,8 @@ export default function ProfileEditPage() {
     try {
       await updateProfile({ nickname: nickname.trim() });
       Taro.showToast({ title: '保存成功', icon: 'success' });
-    } catch {
-      Taro.showToast({ title: '保存失败', icon: 'none' });
+    } catch (err: any) {
+      Taro.showToast({ title: err.msg || err.message || '保存失败', icon: 'none', duration: 3000 });
     } finally {
       setSaving(false);
     }

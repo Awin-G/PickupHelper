@@ -52,6 +52,41 @@
     margin-bottom: 16px;
   }
 
+  &__deadline-options {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  &__deadline-btn {
+    flex: 1;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid $color-border;
+    border-radius: 12px;
+    font-size: 28px;
+    color: $color-text-secondary;
+
+    &--active {
+      border-color: $color-primary;
+      background: rgba(24, 144, 255, 0.05);
+      color: $color-primary;
+      font-weight: 500;
+    }
+
+    &--disabled {
+      opacity: 0.4;
+    }
+  }
+
+  &__deadline-hint {
+    display: block;
+    font-size: 24px;
+    color: $color-text-secondary;
+  }
+
   &__recommended {
     display: flex;
     gap: 16px;

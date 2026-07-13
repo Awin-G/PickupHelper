@@ -17,18 +17,22 @@ export default function ProxyPublishPage() {
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [reward, setReward] = useState('5.00');
   const [deadline, setDeadline] = useState('');
+  const [deadlineLabel, setDeadlineLabel] = useState('');
   const [remark, setRemark] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const DEADLINE_OPTIONS = [
+    { label: '立即', hours: 5 },
+    { label: '今天', hours: 24 },
+    { label: '明天', hours: 48 },
+    { label: '后天', hours: 72 },
+  ] as const;
+
   useEffect(() => {
     fetchMyParcels(true);
-    // 默认截止时间：今天 18:00
-    const now = new Date();
-    const today18 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0);
-    if (now > today18) {
-      today18.setDate(today18.getDate() + 1);
-    }
-    setDeadline(today18.toISOString().slice(0, 16));
+    const d = addHours(24);
+    setDeadline(d.toISOString());
+    setDeadlineLabel('今天');
   }, []);
 
   useEffect(() => {
@@ -40,6 +44,17 @@ export default function ProxyPublishPage() {
   }, [router.params.parcelId, myParcels]);
 
   const pendingParcels = myParcels.filter((p) => p.status === 1 || p.status === 3);
+
+  const addHours = (h: number) => {
+    const d = new Date();
+    d.setHours(d.getHours() + h);
+    return d;
+  };
+
+  const handleSelectDeadline = (label: string, hours: number) => {
+    setDeadline(addHours(hours).toISOString());
+    setDeadlineLabel(label);
+  };
 
   const handleSubmit = async () => {
     if (!selectedParcel) {
@@ -57,18 +72,21 @@ export default function ProxyPublishPage() {
 
     setLoading(true);
     try {
+      const d = new Date(deadline);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const deadlineStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
       await publishTask({
         parcel_id: selectedParcel.id,
         reward_amount: parseFloat(reward),
-        deadline: new Date(deadline).toISOString(),
+        deadline: deadlineStr,
         remark,
       });
       Taro.showToast({ title: '发布成功', icon: 'success' });
       setTimeout(() => {
         Taro.navigateBack();
       }, 1500);
-    } catch {
-      Taro.showToast({ title: '发布失败', icon: 'none' });
+    } catch (err: any) {
+      Taro.showToast({ title: err.msg || err.message || '发布失败', icon: 'none', duration: 3000 });
     } finally {
       setLoading(false);
     }
@@ -114,12 +132,29 @@ export default function ProxyPublishPage() {
 
       <View className='proxy-publish__section'>
         <Text className='proxy-publish__label'>取件截止时间</Text>
-        <Input
-          className='proxy-publish__input'
-          type='datetime-local'
-          value={deadline}
-          onInput={(e) => setDeadline(e.detail.value)}
-        />
+        <View className='proxy-publish__deadline-options'>
+          {DEADLINE_OPTIONS.map((opt) => {
+            const disabled = opt.label === '立即' && parseFloat(reward || '0') < 5;
+            return (
+              <View
+                key={opt.label}
+                className={`proxy-publish__deadline-btn ${deadlineLabel === opt.label ? 'proxy-publish__deadline-btn--active' : ''} ${disabled ? 'proxy-publish__deadline-btn--disabled' : ''}`}
+                onClick={disabled ? undefined : () => handleSelectDeadline(opt.label, opt.hours)}
+              >
+                <Text>{opt.label}</Text>
+              </View>
+            );
+          })}
+        </View>
+        {deadline && (() => {
+          const d = new Date(deadline);
+          const pad = (n: number) => String(n).padStart(2, '0');
+          return (
+            <Text className='proxy-publish__deadline-hint'>
+              截止时间：{pad(d.getMonth() + 1)}/{pad(d.getDate())} {pad(d.getHours())}:{pad(d.getMinutes())}
+            </Text>
+          );
+        })()}
       </View>
 
       <View className='proxy-publish__section'>

@@ -77,7 +77,7 @@ export default function Index() {
             <Text className='index__entry-icon'>📋</Text>
             <Text className='index__entry-text'>任务大厅</Text>
           </View>
-          <View className='index__entry-item' onClick={() => Taro.navigateTo({ url: '/subpkg-proxy/pages/proxy-orders/index' })}>
+          <View className='index__entry-item' onClick={() => Taro.switchTab({ url: '/pages/orders/index' })}>
             <Text className='index__entry-icon'>📦</Text>
             <Text className='index__entry-text'>我的订单</Text>
           </View>

@@ -127,15 +127,26 @@ export interface LoginResult {
   role: string;
 }
 
+/** 驿站信息 */
+export interface Station {
+  id: number;
+  name: string;
+  address: string;
+  hours?: string;
+  distance?: string;
+  lat?: number;
+  lng?: number;
+}
+
 /** 业务错误 */
 export class BusinessError extends Error {
   code: number;
   msg: string;
 
   constructor(code: number, msg: string) {
-    super(msg);
+    super(`[${code}] ${msg}`);
     this.name = 'BusinessError';
     this.code = code;
-    this.msg = msg;
+    this.msg = `[${code}] ${msg}`;
   }
 }
