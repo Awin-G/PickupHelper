@@ -42,6 +42,32 @@ type AuditRequest struct {
 	AuditRemark string `json:"audit_remark" binding:"omitempty,max=255"`
 }
 
+// CreateUserRequest is the body for POST /admin/users.
+type CreateUserRequest struct {
+	Phone    string `json:"phone" binding:"required,phone_cn"`
+	Nickname string `json:"nickname" binding:"omitempty,max=50"`
+	UserType int8   `json:"user_type" binding:"omitempty,oneof=1 2"`
+}
+
+// UpdateUserRequest is the body for PUT /admin/users/:id.
+type UpdateUserRequest struct {
+	Phone         *string `json:"phone,omitempty" binding:"omitempty,phone_cn"`
+	Nickname      *string `json:"nickname,omitempty" binding:"omitempty,max=50"`
+	UserType      *int8   `json:"user_type,omitempty" binding:"omitempty,oneof=1 2"`
+	RunnerStatus  *int8   `json:"runner_status,omitempty" binding:"omitempty,oneof=0 1 2 3"`
+	CreditScore   *int    `json:"credit_score,omitempty" binding:"omitempty,min=0,max=100"`
+	IsBlacklisted *bool   `json:"is_blacklisted,omitempty"`
+}
+
+// ListUsersQuery is the query for GET /admin/users.
+type ListUsersQuery struct {
+	Keyword       string `form:"keyword" binding:"omitempty,max=50"`
+	UserType      *int8  `form:"user_type" binding:"omitempty,oneof=1 2"`
+	IsBlacklisted *bool  `form:"is_blacklisted"`
+	Page          int    `form:"page" binding:"omitempty,min=1"`
+	PageSize      int    `form:"page_size" binding:"omitempty,min=1,max=100"`
+}
+
 // SetBlacklistRequest is the body for PUT /admin/users/:id/blacklist.
 type SetBlacklistRequest struct {
 	IsBlacklisted bool   `json:"is_blacklisted" binding:"required"`
@@ -183,6 +209,99 @@ func (h *UserHandler) SetBlacklist(c *gin.Context) {
 	Success(c, gin.H{"id": targetID})
 }
 
+// ListUsers handles GET /admin/users.
+func (h *UserHandler) ListUsers(c *gin.Context) {
+	var q ListUsersQuery
+	if !middleware.BindAndValidateQuery(c, &q) {
+		return
+	}
+	res, err := h.userSvc.ListUsers(c.Request.Context(), service.AdminUserListFilter{
+		Keyword:       q.Keyword,
+		UserType:      q.UserType,
+		IsBlacklisted: q.IsBlacklisted,
+		Page:          q.Page,
+		PageSize:      q.PageSize,
+	})
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	SuccessPaged(c, res.Items, res.Total, res.Page, res.Size)
+}
+
+// GetUser handles GET /admin/users/:id.
+func (h *UserHandler) GetUser(c *gin.Context) {
+	id, err := parseIDParam(c, "id")
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	dto, err := h.userSvc.GetUserDetail(c.Request.Context(), id)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, dto)
+}
+
+// CreateUser handles POST /admin/users.
+func (h *UserHandler) CreateUser(c *gin.Context) {
+	var req CreateUserRequest
+	if !middleware.BindAndValidate(c, &req) {
+		return
+	}
+	dto, err := h.userSvc.CreateUser(c.Request.Context(), service.CreateUserRequest{
+		Phone:    req.Phone,
+		Nickname: req.Nickname,
+		UserType: req.UserType,
+	})
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, dto)
+}
+
+// UpdateUser handles PUT /admin/users/:id.
+func (h *UserHandler) UpdateUser(c *gin.Context) {
+	id, err := parseIDParam(c, "id")
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	var req UpdateUserRequest
+	if !middleware.BindAndValidate(c, &req) {
+		return
+	}
+	dto, err := h.userSvc.UpdateUser(c.Request.Context(), id, service.UpdateUserRequest{
+		Phone:         req.Phone,
+		Nickname:      req.Nickname,
+		UserType:      req.UserType,
+		RunnerStatus:  req.RunnerStatus,
+		CreditScore:   req.CreditScore,
+		IsBlacklisted: req.IsBlacklisted,
+	})
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, dto)
+}
+
+// DeleteUser handles DELETE /admin/users/:id.
+func (h *UserHandler) DeleteUser(c *gin.Context) {
+	id, err := parseIDParam(c, "id")
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	if err := h.userSvc.DeleteUser(c.Request.Context(), id); err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, gin.H{"id": id})
+}
+
 // RegisterUserRoutes mounts /user/info (GET/PUT) and /user/runner/apply (POST)
 // on the given user group (JWT required).
 func (h *UserHandler) RegisterUserRoutes(g *gin.RouterGroup) {
@@ -193,13 +312,23 @@ func (h *UserHandler) RegisterUserRoutes(g *gin.RouterGroup) {
 
 // RegisterAdminRoutes mounts the admin-only User-module routes on the
 // given admin group (JWT + AdminOnly). Routes:
+//   - GET    /users               list users
+//   - GET    /users/:id           get user detail
+//   - POST   /users               create user
+//   - PUT    /users/:id           update user
+//   - DELETE /users/:id           delete user
 //   - GET    /user/runner/applications
 //   - PUT    /user/runner/applications/:id/audit
 //   - PUT    /users/:id/blacklist
 //
 // The admin group is conventionally mounted under /api/v1/admin, so the
-// fully-qualified paths are /api/v1/admin/user/runner/applications etc.
+// fully-qualified paths are /api/v1/admin/users etc.
 func (h *UserHandler) RegisterAdminRoutes(g *gin.RouterGroup) {
+	g.GET("/users", h.ListUsers)
+	g.GET("/users/:id", h.GetUser)
+	g.POST("/users", h.CreateUser)
+	g.PUT("/users/:id", h.UpdateUser)
+	g.DELETE("/users/:id", h.DeleteUser)
 	g.GET("/user/runner/applications", h.ListRunnerApps)
 	g.PUT("/user/runner/applications/:id/audit", h.AuditRunnerApp)
 	g.PUT("/users/:id/blacklist", h.SetBlacklist)

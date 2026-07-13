@@ -66,3 +66,6 @@ miniapp/.stylelintcache
 
 # ----- Husky internal -----
 miniapp/.husky/_
+
+# ---- Misc ----
+backend/pickup-server

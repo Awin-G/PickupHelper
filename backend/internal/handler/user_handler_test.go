@@ -23,6 +23,11 @@ type fakeUserSvc struct {
 	listRunnerAppsFn func(ctx context.Context, filter service.RunnerAppListFilter) (*service.RunnerAppListResult, error)
 	auditRunnerAppFn func(ctx context.Context, appID, adminID int64, action, remark string) (*service.RunnerAppDTO, error)
 	setBlacklistFn   func(ctx context.Context, userID int64, isBlacklisted bool, reason string) error
+	listUsersFn      func(ctx context.Context, filter service.AdminUserListFilter) (*service.AdminUserListResult, error)
+	getUserDetailFn  func(ctx context.Context, id int64) (*service.AdminUserDetailDTO, error)
+	createUserFn     func(ctx context.Context, req service.CreateUserRequest) (*service.AdminUserDetailDTO, error)
+	updateUserFn     func(ctx context.Context, id int64, req service.UpdateUserRequest) (*service.AdminUserDetailDTO, error)
+	deleteUserFn     func(ctx context.Context, id int64) error
 }
 
 func (f *fakeUserSvc) GetUserInfo(ctx context.Context, userID int64) (*models.UserInfoDTO, error) {
@@ -61,6 +66,36 @@ func (f *fakeUserSvc) SetBlacklist(ctx context.Context, userID int64, isBlacklis
 	}
 	return nil
 }
+func (f *fakeUserSvc) ListUsers(ctx context.Context, filter service.AdminUserListFilter) (*service.AdminUserListResult, error) {
+	if f.listUsersFn != nil {
+		return f.listUsersFn(ctx, filter)
+	}
+	return &service.AdminUserListResult{Items: []*service.AdminUserDetailDTO{{ID: 1, Phone: "13800138000", Nickname: "alice"}}, Total: 1, Page: 1, Size: 20}, nil
+}
+func (f *fakeUserSvc) GetUserDetail(ctx context.Context, id int64) (*service.AdminUserDetailDTO, error) {
+	if f.getUserDetailFn != nil {
+		return f.getUserDetailFn(ctx, id)
+	}
+	return &service.AdminUserDetailDTO{ID: id, Phone: "13800138000", Nickname: "alice"}, nil
+}
+func (f *fakeUserSvc) CreateUser(ctx context.Context, req service.CreateUserRequest) (*service.AdminUserDetailDTO, error) {
+	if f.createUserFn != nil {
+		return f.createUserFn(ctx, req)
+	}
+	return &service.AdminUserDetailDTO{ID: 5, Phone: req.Phone, Nickname: req.Nickname}, nil
+}
+func (f *fakeUserSvc) UpdateUser(ctx context.Context, id int64, req service.UpdateUserRequest) (*service.AdminUserDetailDTO, error) {
+	if f.updateUserFn != nil {
+		return f.updateUserFn(ctx, id, req)
+	}
+	return &service.AdminUserDetailDTO{ID: id, Phone: "13800138000", Nickname: *req.Nickname}, nil
+}
+func (f *fakeUserSvc) DeleteUser(ctx context.Context, id int64) error {
+	if f.deleteUserFn != nil {
+		return f.deleteUserFn(ctx, id)
+	}
+	return nil
+}
 
 // newUserHandlerEngine mounts the user handler routes with the fake service.
 // authAs controls the X-User-Id / X-Role headers injected for every request;
@@ -86,6 +121,11 @@ func newUserHandlerEngine(svc *fakeUserSvc, authAs struct {
 	userG.POST("/runner/apply", func(c *gin.Context) { callApplyRunner(c, svc) })
 
 	adminG := engine.Group("/api/v1/admin")
+	adminG.GET("/users", func(c *gin.Context) { callListUsers(c, svc) })
+	adminG.GET("/users/:id", func(c *gin.Context) { callGetUser(c, svc) })
+	adminG.POST("/users", func(c *gin.Context) { callCreateUser(c, svc) })
+	adminG.PUT("/users/:id", func(c *gin.Context) { callUpdateUser(c, svc) })
+	adminG.DELETE("/users/:id", func(c *gin.Context) { callDeleteUser(c, svc) })
 	adminG.GET("/user/runner/applications", func(c *gin.Context) { callListRunnerApps(c, svc) })
 	adminG.PUT("/user/runner/applications/:id/audit", func(c *gin.Context) { callAuditRunnerApp(c, svc) })
 	adminG.PUT("/users/:id/blacklist", func(c *gin.Context) { callSetBlacklist(c, svc) })
@@ -409,6 +449,186 @@ func TestHandler_SetBlacklist_Success(t *testing.T) {
 	body := decodeResponse(t, rr)
 	data := body["data"].(map[string]any)
 	assert.Equal(t, float64(42), data["id"])
+}
+
+func callListUsers(c *gin.Context, svc *fakeUserSvc) {
+	var q ListUsersQuery
+	if !middleware.BindAndValidateQuery(c, &q) {
+		return
+	}
+	res, err := svc.ListUsers(c.Request.Context(), service.AdminUserListFilter{
+		Keyword:       q.Keyword,
+		UserType:      q.UserType,
+		IsBlacklisted: q.IsBlacklisted,
+		Page:          q.Page,
+		PageSize:      q.PageSize,
+	})
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	SuccessPaged(c, res.Items, res.Total, res.Page, res.Size)
+}
+
+func callGetUser(c *gin.Context, svc *fakeUserSvc) {
+	id, err := parseIDParam(c, "id")
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	dto, err := svc.GetUserDetail(c.Request.Context(), id)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, dto)
+}
+
+func callCreateUser(c *gin.Context, svc *fakeUserSvc) {
+	var req CreateUserRequest
+	if !middleware.BindAndValidate(c, &req) {
+		return
+	}
+	dto, err := svc.CreateUser(c.Request.Context(), service.CreateUserRequest{
+		Phone:    req.Phone,
+		Nickname: req.Nickname,
+		UserType: req.UserType,
+	})
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, dto)
+}
+
+func callUpdateUser(c *gin.Context, svc *fakeUserSvc) {
+	id, err := parseIDParam(c, "id")
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	var req UpdateUserRequest
+	if !middleware.BindAndValidate(c, &req) {
+		return
+	}
+	dto, err := svc.UpdateUser(c.Request.Context(), id, service.UpdateUserRequest{
+		Phone:         req.Phone,
+		Nickname:      req.Nickname,
+		UserType:      req.UserType,
+		RunnerStatus:  req.RunnerStatus,
+		CreditScore:   req.CreditScore,
+		IsBlacklisted: req.IsBlacklisted,
+	})
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, dto)
+}
+
+func callDeleteUser(c *gin.Context, svc *fakeUserSvc) {
+	id, err := parseIDParam(c, "id")
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	if err := svc.DeleteUser(c.Request.Context(), id); err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, gin.H{"id": id})
+}
+
+// --- Admin user CRUD handler tests ---
+
+func TestHandler_ListUsers_Success(t *testing.T) {
+	engine := newUserHandlerEngine(&fakeUserSvc{}, struct {
+		UserID int64
+		Role   string
+	}{UserID: 1, Role: "admin"})
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/admin/users?page=1&page_size=20", nil)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := decodeResponse(t, rr)
+	data := body["data"].(map[string]any)
+	assert.Equal(t, float64(1), data["total"])
+}
+
+func TestHandler_GetUser_Success(t *testing.T) {
+	engine := newUserHandlerEngine(&fakeUserSvc{}, struct {
+		UserID int64
+		Role   string
+	}{UserID: 1, Role: "admin"})
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/admin/users/5", nil)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := decodeResponse(t, rr)
+	data := body["data"].(map[string]any)
+	assert.Equal(t, float64(5), data["id"])
+}
+
+func TestHandler_GetUser_NotFound(t *testing.T) {
+	svc := &fakeUserSvc{getUserDetailFn: func(_ context.Context, _ int64) (*service.AdminUserDetailDTO, error) {
+		return nil, apperrors.New(apperrors.ErrUserNotFound, "")
+	}}
+	engine := newUserHandlerEngine(svc, struct {
+		UserID int64
+		Role   string
+	}{UserID: 1, Role: "admin"})
+	rr := doJSON(t, engine, http.MethodGet, "/api/v1/admin/users/999", nil)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestHandler_CreateUser_Success(t *testing.T) {
+	engine := newUserHandlerEngine(&fakeUserSvc{}, struct {
+		UserID int64
+		Role   string
+	}{UserID: 1, Role: "admin"})
+	rr := doJSON(t, engine, http.MethodPost, "/api/v1/admin/users", CreateUserRequest{Phone: "13800138000", Nickname: "newbie"})
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := decodeResponse(t, rr)
+	data := body["data"].(map[string]any)
+	assert.Equal(t, "13800138000", data["phone"])
+}
+
+func TestHandler_CreateUser_BadPhone(t *testing.T) {
+	engine := newUserHandlerEngine(&fakeUserSvc{}, struct {
+		UserID int64
+		Role   string
+	}{UserID: 1, Role: "admin"})
+	rr := doJSON(t, engine, http.MethodPost, "/api/v1/admin/users", map[string]string{"phone": "123"})
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestHandler_UpdateUser_Success(t *testing.T) {
+	engine := newUserHandlerEngine(&fakeUserSvc{}, struct {
+		UserID int64
+		Role   string
+	}{UserID: 1, Role: "admin"})
+	rr := doJSON(t, engine, http.MethodPut, "/api/v1/admin/users/3", UpdateUserRequest{Nickname: strPtr("newname")})
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := decodeResponse(t, rr)
+	data := body["data"].(map[string]any)
+	assert.Equal(t, "newname", data["nickname"])
+}
+
+func TestHandler_DeleteUser_Success(t *testing.T) {
+	engine := newUserHandlerEngine(&fakeUserSvc{}, struct {
+		UserID int64
+		Role   string
+	}{UserID: 1, Role: "admin"})
+	rr := doJSON(t, engine, http.MethodDelete, "/api/v1/admin/users/7", nil)
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestHandler_DeleteUser_NotFound(t *testing.T) {
+	svc := &fakeUserSvc{deleteUserFn: func(_ context.Context, _ int64) error {
+		return apperrors.New(apperrors.ErrUserNotFound, "")
+	}}
+	engine := newUserHandlerEngine(svc, struct {
+		UserID int64
+		Role   string
+	}{UserID: 1, Role: "admin"})
+	rr := doJSON(t, engine, http.MethodDelete, "/api/v1/admin/users/999", nil)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
 }
 
 func TestHandler_SetBlacklist_UserNotFound(t *testing.T) {

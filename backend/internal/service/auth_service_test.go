@@ -308,6 +308,34 @@ func TestAdminLogin_Disabled(t *testing.T) {
 	requireAppErr(t, err, apperrors.ErrAdminDisabled)
 }
 
+func TestListActiveCodes_Success(t *testing.T) {
+	cache := newMockSMSCodeCache()
+	require.NoError(t, cache.SetCode(context.Background(), "13800138000", "123456", 60*time.Second))
+	require.NoError(t, cache.SetCode(context.Background(), "13900139000", "654321", 120*time.Second))
+	svc := NewAuthService(&mockUserRepo{}, &mockAdminRepo{}, cache, &mockSMSProvider{}, testCfg(), nil)
+
+	codes, err := svc.ListActiveCodes(context.Background())
+	require.NoError(t, err)
+	assert.Len(t, codes, 2)
+
+	phones := map[string]string{}
+	for _, c := range codes {
+		phones[c.Phone] = c.Code
+	}
+	assert.Equal(t, "123456", phones["13800138000"])
+	assert.Equal(t, "654321", phones["13900139000"])
+	assert.Greater(t, codes[0].ExpireIn, int64(0))
+}
+
+func TestListActiveCodes_Empty(t *testing.T) {
+	cache := newMockSMSCodeCache()
+	svc := NewAuthService(&mockUserRepo{}, &mockAdminRepo{}, cache, &mockSMSProvider{}, testCfg(), nil)
+
+	codes, err := svc.ListActiveCodes(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, codes)
+}
+
 // --- helpers ---
 
 // requireAppErr asserts err is an *AppError with the given code.

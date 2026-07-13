@@ -21,11 +21,24 @@ type UserRepo interface {
 	FindByID(ctx context.Context, db DBTX, id int64) (*models.User, error)
 	FindByOpenID(ctx context.Context, db DBTX, openid string) (*models.User, error)
 	Create(ctx context.Context, db DBTX, phone, openid string) (int64, error)
+	CreateAdmin(ctx context.Context, db DBTX, phone, nickname string, userType int8) (int64, error)
 	UpdateProfile(ctx context.Context, db DBTX, id int64, nickname, avatar string) error
 	UpdateRunnerStatus(ctx context.Context, db DBTX, id int64, userType, runnerStatus int8) error
 	SetBlacklist(ctx context.Context, db DBTX, id int64, isBlacklisted int8) error
 	UpdateOpenID(ctx context.Context, db DBTX, id int64, openid string) error
 	SaveAvatar(ctx context.Context, db DBTX, id int64, data []byte, contentType string) error
+	ListUsers(ctx context.Context, db DBTX, filter UserListFilter) ([]*models.User, int64, error)
+	UpdateUser(ctx context.Context, db DBTX, id int64, cols []string, args []any) error
+	DeleteUser(ctx context.Context, db DBTX, id int64) error
+}
+
+// UserListFilter holds optional filters for listing users.
+type UserListFilter struct {
+	Keyword       string // matches nickname or phone
+	UserType      *int8
+	IsBlacklisted *int8
+	Offset        int
+	Limit         int
 }
 
 // AdminRepo abstracts persistence for the admins table.
@@ -108,6 +121,26 @@ func (r *mysqlUserRepo) FindByOpenID(ctx context.Context, db DBTX, openid string
 // Create inserts a new user with INSERT IGNORE so duplicate phone does
 // not error. Returns the new id, or the existing id if the phone was
 // already present (LastInsertId()==0 in that case).
+// CreateAdmin inserts a user with explicit nickname and user_type.
+// Returns the new ID, or 0 + error on duplicate phone.
+func (r *mysqlUserRepo) CreateAdmin(ctx context.Context, db DBTX, phone, nickname string, userType int8) (int64, error) {
+	res, err := db.ExecContext(ctx,
+		`INSERT INTO users (phone, nickname, user_type, runner_status, credit_score, is_blacklisted)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		phone, nickname, userType, models.RunnerStatusNone, 100, 0)
+	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			return 0, fmt.Errorf("user_repo.CreateAdmin: %w", err)
+		}
+		return 0, fmt.Errorf("user_repo.CreateAdmin: %w", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("user_repo.CreateAdmin LastInsertId: %w", err)
+	}
+	return id, nil
+}
+
 func (r *mysqlUserRepo) Create(ctx context.Context, db DBTX, phone, openid string) (int64, error) {
 	res, err := db.ExecContext(ctx,
 		`INSERT IGNORE INTO users (phone, openid, user_type, runner_status, credit_score, is_blacklisted)
@@ -175,6 +208,97 @@ func (r *mysqlUserRepo) SaveAvatar(ctx context.Context, db DBTX, id int64, data 
 		return fmt.Errorf("user_repo.SaveAvatar: %w", err)
 	}
 	return nil
+}
+
+func (r *mysqlUserRepo) ListUsers(ctx context.Context, db DBTX, filter UserListFilter) ([]*models.User, int64, error) {
+	where, args := buildUserWhere(filter)
+	countQ := "SELECT COUNT(*) FROM users"
+	if where != "" {
+		countQ += " WHERE " + where
+	}
+	var total int64
+	if err := db.GetContext(ctx, &total, countQ, args...); err != nil {
+		return nil, 0, fmt.Errorf("user_repo.ListUsers count: %w", err)
+	}
+
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	listQ := `SELECT id, phone, nickname, avatar, openid, user_type, runner_status,
+	                 credit_score, is_blacklisted, created_at, updated_at
+	          FROM users`
+	if where != "" {
+		listQ += " WHERE " + where
+	}
+	listQ += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	listArgs := append(args, limit, filter.Offset)
+
+	var users []*models.User
+	if err := db.SelectContext(ctx, &users, listQ, listArgs...); err != nil {
+		return nil, 0, fmt.Errorf("user_repo.ListUsers list: %w", err)
+	}
+	return users, total, nil
+}
+
+func (r *mysqlUserRepo) UpdateUser(ctx context.Context, db DBTX, id int64, cols []string, args []any) error {
+	if len(cols) == 0 {
+		return nil
+	}
+	var sb strings.Builder
+	sb.WriteString("UPDATE users SET ")
+	for i, col := range cols {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(col)
+		sb.WriteString(" = ?")
+	}
+	sb.WriteString(" WHERE id = ?")
+	args = append(args, id)
+	_, err := db.ExecContext(ctx, sb.String(), args...)
+	if err != nil {
+		return fmt.Errorf("user_repo.UpdateUser: %w", err)
+	}
+	return nil
+}
+
+func (r *mysqlUserRepo) DeleteUser(ctx context.Context, db DBTX, id int64) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("user_repo.DeleteUser: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("user_repo.DeleteUser RowsAffected: %w", err)
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// buildUserWhere constructs the WHERE clause for ListUsers.
+func buildUserWhere(filter UserListFilter) (string, []any) {
+	var conds []string
+	var args []any
+	if kw := strings.TrimSpace(filter.Keyword); kw != "" {
+		like := "%" + kw + "%"
+		conds = append(conds, "(nickname LIKE ? OR phone LIKE ?)")
+		args = append(args, like, like)
+	}
+	if filter.UserType != nil {
+		conds = append(conds, "user_type = ?")
+		args = append(args, *filter.UserType)
+	}
+	if filter.IsBlacklisted != nil {
+		conds = append(conds, "is_blacklisted = ?")
+		args = append(args, *filter.IsBlacklisted)
+	}
+	if len(conds) == 0 {
+		return "", nil
+	}
+	return strings.Join(conds, " AND "), args
 }
 
 // mysqlAdminRepo implements AdminRepo.

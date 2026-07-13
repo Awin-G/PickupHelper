@@ -11,20 +11,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Handlers bundles all module handlers that the router mounts. Phase 1
-// only populates Health; Phase 2 adds Auth and User. Future phases extend
-// this struct (parcel / pickup / station / etc.).
+// Handlers bundles all module handlers that the router mounts.
 type Handlers struct {
-	Health *handler.HealthHandler
-	Auth   *handler.AuthHandler
-	User   *handler.UserHandler
-	Parcel *handler.ParcelHandler
-	Pickup *handler.PickupHandler
-	Proxy  *handler.ProxyHandler
-	Shelf  *handler.ShelfHandler
-	Notify *handler.NotifyHandler
-	Stats  *handler.StatsHandler
-	Avatar *handler.AvatarHandler
+	Health  *handler.HealthHandler
+	Auth    *handler.AuthHandler
+	User    *handler.UserHandler
+	Parcel  *handler.ParcelHandler
+	Pickup  *handler.PickupHandler
+	Proxy   *handler.ProxyHandler
+	Shelf   *handler.ShelfHandler
+	Notify  *handler.NotifyHandler
+	Stats   *handler.StatsHandler
+	Avatar  *handler.AvatarHandler
+	Station *handler.StationHandler
 }
 
 // Register wires the global middleware chain and application routes onto
@@ -80,10 +79,13 @@ func Register(engine *gin.Engine, cfg *config.Config, h *Handlers) {
 	}
 
 	// Admin-only routes (JWT + AdminOnly).
+	adminGroup := jwtGroup.Group("/admin")
+	adminGroup.Use(middleware.AdminOnly())
 	if h.User != nil {
-		adminGroup := jwtGroup.Group("/admin")
-		adminGroup.Use(middleware.AdminOnly())
 		h.User.RegisterAdminRoutes(adminGroup)
+	}
+	if h.Auth != nil {
+		h.Auth.RegisterAdminAuthManagementRoutes(adminGroup)
 	}
 
 	// Parcel admin routes (JWT + AdminOnly).
@@ -125,6 +127,12 @@ func Register(engine *gin.Engine, cfg *config.Config, h *Handlers) {
 
 	if h.Avatar != nil {
 		h.Avatar.RegisterAvatarRoutes(jwtGroup)
+	}
+
+	if h.Station != nil {
+		stationGroup := jwtGroup.Group("/stations")
+		stationGroup.Use(middleware.AdminOnly())
+		h.Station.RegisterStationRoutes(stationGroup)
 	}
 
 	// NoRoute: enforce JWT for unmatched /api/v1/* paths.

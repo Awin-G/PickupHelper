@@ -19,11 +19,15 @@ type mockUserRepo struct {
 	FindByIDFn           func(ctx context.Context, db repository.DBTX, id int64) (*models.User, error)
 	FindByOpenIDFn       func(ctx context.Context, db repository.DBTX, openid string) (*models.User, error)
 	CreateFn             func(ctx context.Context, db repository.DBTX, phone, openid string) (int64, error)
+	CreateAdminFn        func(ctx context.Context, db repository.DBTX, phone, nickname string, userType int8) (int64, error)
 	UpdateProfileFn      func(ctx context.Context, db repository.DBTX, id int64, nickname, avatar string) error
 	UpdateRunnerStatusFn func(ctx context.Context, db repository.DBTX, id int64, userType, runnerStatus int8) error
 	SetBlacklistFn       func(ctx context.Context, db repository.DBTX, id int64, isBlacklisted int8) error
 	UpdateOpenIDFn func(ctx context.Context, db repository.DBTX, id int64, openid string) error
 	SaveAvatarFn   func(ctx context.Context, db repository.DBTX, id int64, data []byte, contentType string) error
+	ListUsersFn    func(ctx context.Context, db repository.DBTX, filter repository.UserListFilter) ([]*models.User, int64, error)
+	UpdateUserFn   func(ctx context.Context, db repository.DBTX, id int64, cols []string, args []any) error
+	DeleteUserFn   func(ctx context.Context, db repository.DBTX, id int64) error
 
 	// Call records for assertions.
 	CreateCalls             []createCall
@@ -122,6 +126,34 @@ func (m *mockUserRepo) SaveAvatar(ctx context.Context, db repository.DBTX, id in
 	return nil
 }
 
+func (m *mockUserRepo) CreateAdmin(ctx context.Context, db repository.DBTX, phone, nickname string, userType int8) (int64, error) {
+	if m.CreateAdminFn != nil {
+		return m.CreateAdminFn(ctx, db, phone, nickname, userType)
+	}
+	return 2, nil
+}
+
+func (m *mockUserRepo) ListUsers(ctx context.Context, db repository.DBTX, filter repository.UserListFilter) ([]*models.User, int64, error) {
+	if m.ListUsersFn != nil {
+		return m.ListUsersFn(ctx, db, filter)
+	}
+	return nil, 0, nil
+}
+
+func (m *mockUserRepo) UpdateUser(ctx context.Context, db repository.DBTX, id int64, cols []string, args []any) error {
+	if m.UpdateUserFn != nil {
+		return m.UpdateUserFn(ctx, db, id, cols, args)
+	}
+	return nil
+}
+
+func (m *mockUserRepo) DeleteUser(ctx context.Context, db repository.DBTX, id int64) error {
+	if m.DeleteUserFn != nil {
+		return m.DeleteUserFn(ctx, db, id)
+	}
+	return nil
+}
+
 // --- mockAdminRepo ---
 
 type mockAdminRepo struct {
@@ -213,6 +245,7 @@ type mockSMSCodeCache struct {
 	DelCodeFn               func(ctx context.Context, phone string) error
 	CheckAndIncrPhoneRateFn func(ctx context.Context, phone string) (int, error)
 	CheckAndIncrIPRateFn    func(ctx context.Context, ip string) (int, error)
+	ListCodesFn             func(ctx context.Context) ([]repository.ActiveCode, error)
 
 	DelCodeCalls []string
 }
@@ -279,6 +312,26 @@ func (m *mockSMSCodeCache) CheckAndIncrIPRate(ctx context.Context, ip string) (i
 	return m.ipRate[ip], nil
 }
 
+func (m *mockSMSCodeCache) ListCodes(ctx context.Context) ([]repository.ActiveCode, error) {
+	if m.ListCodesFn != nil {
+		return m.ListCodesFn(ctx)
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]repository.ActiveCode, 0, len(m.codes))
+	for phone, code := range m.codes {
+		if code == "" {
+			continue
+		}
+		out = append(out, repository.ActiveCode{
+			Phone:    phone,
+			Code:     code,
+			ExpireIn: 300,
+		})
+	}
+	return out, nil
+}
+
 // --- mockSMSProvider ---
 
 type mockSMSProvider struct {
@@ -305,11 +358,46 @@ func (m *mockSMSProvider) GenerateCode() string {
 	return "123456"
 }
 
+// --- mockStationRepo ---
+
+type mockStationRepo struct {
+	ListFn    func(ctx context.Context, db repository.DBTX, filter repository.StationFilter) ([]*models.Station, int64, error)
+	FindByIDFn func(ctx context.Context, db repository.DBTX, id int64) (*models.Station, error)
+	CreateFn  func(ctx context.Context, db repository.DBTX, s *models.Station) (int64, error)
+	UpdateFn  func(ctx context.Context, db repository.DBTX, id int64, cols []string, args []any) error
+}
+
+func (m *mockStationRepo) List(ctx context.Context, db repository.DBTX, filter repository.StationFilter) ([]*models.Station, int64, error) {
+	if m.ListFn != nil {
+		return m.ListFn(ctx, db, filter)
+	}
+	return nil, 0, nil
+}
+func (m *mockStationRepo) FindByID(ctx context.Context, db repository.DBTX, id int64) (*models.Station, error) {
+	if m.FindByIDFn != nil {
+		return m.FindByIDFn(ctx, db, id)
+	}
+	return nil, sql.ErrNoRows
+}
+func (m *mockStationRepo) Create(ctx context.Context, db repository.DBTX, s *models.Station) (int64, error) {
+	if m.CreateFn != nil {
+		return m.CreateFn(ctx, db, s)
+	}
+	return 1, nil
+}
+func (m *mockStationRepo) Update(ctx context.Context, db repository.DBTX, id int64, cols []string, args []any) error {
+	if m.UpdateFn != nil {
+		return m.UpdateFn(ctx, db, id, cols, args)
+	}
+	return nil
+}
+
 // Compile-time assertions that mocks satisfy the interfaces.
 var (
 	_ repository.UserRepo      = (*mockUserRepo)(nil)
 	_ repository.AdminRepo     = (*mockAdminRepo)(nil)
 	_ repository.RunnerAppRepo = (*mockRunnerAppRepo)(nil)
 	_ repository.SMSCodeCache  = (*mockSMSCodeCache)(nil)
+	_ repository.StationRepo   = (*mockStationRepo)(nil)
 	_ SMSProvider              = (*mockSMSProvider)(nil)
 )

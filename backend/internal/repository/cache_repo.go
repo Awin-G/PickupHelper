@@ -3,10 +3,18 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
+
+// ActiveCode represents an unexpired, unused SMS verification code in Redis.
+type ActiveCode struct {
+	Phone    string `json:"phone"`
+	Code     string `json:"code"`
+	ExpireIn int64  `json:"expire_in"` // remaining TTL in seconds
+}
 
 // SMSCodeCache abstracts the per-phone SMS verification code store backed
 // by Redis, plus the per-phone / per-IP rate limit counters. Keys:
@@ -27,6 +35,10 @@ type SMSCodeCache interface {
 	// CheckAndIncrIPRate increments the per-IP rate counter and returns
 	// the new value. Caller treats count > 10 as "10min IP over limit".
 	CheckAndIncrIPRate(ctx context.Context, ip string) (int, error)
+	// ListCodes returns all unexpired SMS codes stored in Redis.
+	// Expired keys (TTL <= 0) are filtered out. Returns an empty slice
+	// (not nil) when no codes exist.
+	ListCodes(ctx context.Context) ([]ActiveCode, error)
 }
 
 // redisSMSCodeCache implements SMSCodeCache against *redis.Client.
@@ -95,4 +107,44 @@ func (c *redisSMSCodeCache) CheckAndIncrPhoneRate(ctx context.Context, phone str
 
 func (c *redisSMSCodeCache) CheckAndIncrIPRate(ctx context.Context, ip string) (int, error) {
 	return c.incrRate(ctx, smsIPRateKeyPrefix+ip, smsIPRateTTL)
+}
+
+// ListCodes scans all sms:code:* keys and returns every active (unexpired)
+// verification code along with its remaining TTL.
+func (c *redisSMSCodeCache) ListCodes(ctx context.Context) ([]ActiveCode, error) {
+	keys, err := c.rdb.Keys(ctx, smsCodeKeyPrefix+"*").Result()
+	if err != nil {
+		return nil, fmt.Errorf("sms_cache.ListCodes keys: %w", err)
+	}
+	if len(keys) == 0 {
+		return []ActiveCode{}, nil
+	}
+
+	out := make([]ActiveCode, 0, len(keys))
+	for _, key := range keys {
+		phone := strings.TrimPrefix(key, smsCodeKeyPrefix)
+		val, err := c.rdb.Get(ctx, key).Result()
+		if err == redis.Nil {
+			continue // expired between KEYS and GET
+		}
+		if err != nil {
+			return nil, fmt.Errorf("sms_cache.ListCodes get %s: %w", key, err)
+		}
+		ttl, err := c.rdb.TTL(ctx, key).Result()
+		if err != nil {
+			return nil, fmt.Errorf("sms_cache.ListCodes ttl %s: %w", key, err)
+		}
+		if ttl <= 0 {
+			continue // expired, skip
+		}
+		out = append(out, ActiveCode{
+			Phone:    phone,
+			Code:     val,
+			ExpireIn: int64(ttl.Seconds()),
+		})
+	}
+	if out == nil {
+		out = []ActiveCode{}
+	}
+	return out, nil
 }

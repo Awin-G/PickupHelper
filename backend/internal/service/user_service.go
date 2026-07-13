@@ -237,6 +237,203 @@ func (s *UserService) AuditRunnerApp(ctx context.Context, appID, adminID int64, 
 	return toRunnerAppDTO(updated, phone), nil
 }
 
+// AdminUserDetailDTO is the admin-facing user representation with unmasked phone.
+type AdminUserDetailDTO struct {
+	ID            int64  `json:"id"`
+	Phone         string `json:"phone"`
+	Nickname      string `json:"nickname"`
+	Avatar        string `json:"avatar"`
+	OpenID        string `json:"openid,omitempty"`
+	UserType      int8   `json:"user_type"`
+	RunnerStatus  int8   `json:"runner_status"`
+	CreditScore   int    `json:"credit_score"`
+	IsBlacklisted bool   `json:"is_blacklisted"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+}
+
+// AdminUserListFilter is the service-layer filter for ListUsers.
+type AdminUserListFilter struct {
+	Keyword       string
+	UserType      *int8
+	IsBlacklisted *bool
+	Page          int
+	PageSize      int
+}
+
+// AdminUserListResult bundles the page + total for ListUsers.
+type AdminUserListResult struct {
+	Items []*AdminUserDetailDTO `json:"items"`
+	Total int64                 `json:"total"`
+	Page  int                   `json:"page"`
+	Size  int                   `json:"size"`
+}
+
+// CreateUserRequest is the input for creating a user via admin.
+type CreateUserRequest struct {
+	Phone    string `json:"phone"`
+	Nickname string `json:"nickname"`
+	UserType int8   `json:"user_type"`
+}
+
+// UpdateUserRequest is the input for updating a user via admin.
+type UpdateUserRequest struct {
+	Phone         *string `json:"phone,omitempty"`
+	Nickname      *string `json:"nickname,omitempty"`
+	UserType      *int8   `json:"user_type,omitempty"`
+	RunnerStatus  *int8   `json:"runner_status,omitempty"`
+	CreditScore   *int    `json:"credit_score,omitempty"`
+	IsBlacklisted *bool   `json:"is_blacklisted,omitempty"`
+}
+
+// ListUsers returns a paginated list of all users (admin view, phone unmasked).
+func (s *UserService) ListUsers(ctx context.Context, filter AdminUserListFilter) (*AdminUserListResult, error) {
+	page := filter.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := filter.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	var isBlacklisted *int8
+	if filter.IsBlacklisted != nil {
+		v := int8(0)
+		if *filter.IsBlacklisted {
+			v = 1
+		}
+		isBlacklisted = &v
+	}
+
+	repoFilter := repository.UserListFilter{
+		Keyword:       strings.TrimSpace(filter.Keyword),
+		UserType:      filter.UserType,
+		IsBlacklisted: isBlacklisted,
+		Offset:        (page - 1) * pageSize,
+		Limit:         pageSize,
+	}
+	users, total, err := s.userRepo.ListUsers(ctx, s.db, repoFilter)
+	if err != nil {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	items := make([]*AdminUserDetailDTO, 0, len(users))
+	for _, u := range users {
+		items = append(items, toAdminUserDTO(u))
+	}
+	return &AdminUserListResult{Items: items, Total: total, Page: page, Size: pageSize}, nil
+}
+
+// GetUserDetail returns a single user's detail (admin view, phone unmasked).
+func (s *UserService) GetUserDetail(ctx context.Context, id int64) (*AdminUserDetailDTO, error) {
+	u, err := s.userRepo.FindByID(ctx, s.db, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, apperrors.New(apperrors.ErrUserNotFound, "")
+	}
+	if err != nil {
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	return toAdminUserDTO(u), nil
+}
+
+// CreateUser creates a new user by admin. Returns ErrPhoneExists on duplicate.
+func (s *UserService) CreateUser(ctx context.Context, req CreateUserRequest) (*AdminUserDetailDTO, error) {
+	if !models.IsValidPhone(req.Phone) {
+		return nil, apperrors.New(apperrors.ErrPhoneFormat, "")
+	}
+	if len([]rune(req.Nickname)) > 50 {
+		return nil, apperrors.New(apperrors.ErrNicknameTooLong, "")
+	}
+	if req.UserType != models.UserTypeNormal && req.UserType != models.UserTypeRunner {
+		req.UserType = models.UserTypeNormal
+	}
+
+	id, err := s.userRepo.CreateAdmin(ctx, s.db, req.Phone, req.Nickname, req.UserType)
+	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate") {
+			return nil, apperrors.New(apperrors.ErrPhoneExists, "")
+		}
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	return s.GetUserDetail(ctx, id)
+}
+
+// UpdateUser updates one or more fields of a user by admin.
+func (s *UserService) UpdateUser(ctx context.Context, id int64, req UpdateUserRequest) (*AdminUserDetailDTO, error) {
+	if _, err := s.userRepo.FindByID(ctx, s.db, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperrors.New(apperrors.ErrUserNotFound, "")
+		}
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+
+	var cols []string
+	var args []any
+
+	if req.Phone != nil {
+		if !models.IsValidPhone(*req.Phone) {
+			return nil, apperrors.New(apperrors.ErrPhoneFormat, "")
+		}
+		cols = append(cols, "phone")
+		args = append(args, *req.Phone)
+	}
+	if req.Nickname != nil {
+		if len([]rune(*req.Nickname)) > 50 {
+			return nil, apperrors.New(apperrors.ErrNicknameTooLong, "")
+		}
+		cols = append(cols, "nickname")
+		args = append(args, *req.Nickname)
+	}
+	if req.UserType != nil {
+		cols = append(cols, "user_type")
+		args = append(args, *req.UserType)
+	}
+	if req.RunnerStatus != nil {
+		cols = append(cols, "runner_status")
+		args = append(args, *req.RunnerStatus)
+	}
+	if req.CreditScore != nil {
+		cols = append(cols, "credit_score")
+		args = append(args, *req.CreditScore)
+	}
+	if req.IsBlacklisted != nil {
+		v := int8(0)
+		if *req.IsBlacklisted {
+			v = 1
+		}
+		cols = append(cols, "is_blacklisted")
+		args = append(args, v)
+	}
+
+	if len(cols) == 0 {
+		return s.GetUserDetail(ctx, id)
+	}
+
+	if err := s.userRepo.UpdateUser(ctx, s.db, id, cols, args); err != nil {
+		if strings.Contains(err.Error(), "Duplicate") {
+			return nil, apperrors.New(apperrors.ErrPhoneExists, "")
+		}
+		return nil, apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	return s.GetUserDetail(ctx, id)
+}
+
+// DeleteUser hard-deletes a user by id. Returns ErrUserNotFound if the user
+// does not exist. May fail with a foreign-key constraint if the user has
+// associated parcels or other records.
+func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
+	if err := s.userRepo.DeleteUser(ctx, s.db, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return apperrors.New(apperrors.ErrUserNotFound, "")
+		}
+		return apperrors.Wrap(err, apperrors.ErrInternal, "")
+	}
+	return nil
+}
+
 // SetBlacklist toggles a user's blacklist flag. v=true → blacklist.
 func (s *UserService) SetBlacklist(ctx context.Context, userID int64, isBlacklisted bool, _ string) error {
 	if _, err := s.userRepo.FindByID(ctx, s.db, userID); err != nil {
@@ -290,6 +487,27 @@ func toRunnerAppDTO(a *models.RunnerApplication, phone string) *RunnerAppDTO {
 		dto.AuditRemark = a.AuditRemark.String
 	}
 	return dto
+}
+
+// toAdminUserDTO converts a User model to the admin-facing DTO (phone unmasked).
+func toAdminUserDTO(u *models.User) *AdminUserDetailDTO {
+	openid := ""
+	if u.OpenID.Valid {
+		openid = u.OpenID.String
+	}
+	return &AdminUserDetailDTO{
+		ID:            u.ID,
+		Phone:         u.Phone,
+		Nickname:      u.Nickname,
+		Avatar:        u.Avatar,
+		OpenID:        openid,
+		UserType:      u.UserType,
+		RunnerStatus:  u.RunnerStatus,
+		CreditScore:   u.CreditScore,
+		IsBlacklisted: u.IsBlacklistedBool(),
+		CreatedAt:     u.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:     u.UpdatedAt.Format("2006-01-02 15:04:05"),
+	}
 }
 
 func appStatusText(s int8) string {

@@ -59,7 +59,8 @@ const (
 	ErrAdminCredential = 10161 // 用户名或密码错误
 	ErrAdminDisabled   = 10162 // 管理员已禁用
 
-	ErrUserNotFound = 10171 // 用户不存在
+	ErrUserNotFound  = 10171 // 用户不存在
+	ErrPhoneExists   = 10172 // 手机号已存在
 
 	// Parcel module error codes (10201~10299) — see 详细设计文档/api详细设计.md 3.1~3.7.
 	ErrParcelDuplicate       = 10201 // 快递单号已存在（同驿站内）

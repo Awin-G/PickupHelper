@@ -23,38 +23,41 @@ type Container struct {
 	RDB *redis.Client
 
 	// Repositories (stateless, safe for concurrent use).
-	userRepo   repository.UserRepo
-	adminRepo  repository.AdminRepo
-	runnerRepo repository.RunnerAppRepo
-	smsCache   repository.SMSCodeCache
-	parcelRepo repository.ParcelRepo
-	shelfRepo  repository.ShelfRepo
-	pickupRepo repository.PickupLogRepo
-	proxyRepo  repository.ProxyOrderRepo
-	notifyRepo repository.NotifyRepo
+	userRepo    repository.UserRepo
+	adminRepo   repository.AdminRepo
+	runnerRepo  repository.RunnerAppRepo
+	smsCache    repository.SMSCodeCache
+	parcelRepo  repository.ParcelRepo
+	shelfRepo   repository.ShelfRepo
+	pickupRepo  repository.PickupLogRepo
+	proxyRepo   repository.ProxyOrderRepo
+	notifyRepo  repository.NotifyRepo
+	stationRepo repository.StationRepo
 
 	// Services.
-	authSvc    *service.AuthService
-	userSvc    *service.UserService
-	parcelSvc  *service.ParcelService
-	pickupSvc  *service.PickupService
-	proxySvc   *service.ProxyService
-	shelfSvc   *service.ShelfService
-	notifySvc  *service.NotifyService
-	statsSvc   *service.StatsService
-	avatarSvc  *service.AvatarService
+	authSvc     *service.AuthService
+	userSvc     *service.UserService
+	parcelSvc   *service.ParcelService
+	pickupSvc   *service.PickupService
+	proxySvc    *service.ProxyService
+	shelfSvc    *service.ShelfService
+	notifySvc   *service.NotifyService
+	statsSvc    *service.StatsService
+	avatarSvc   *service.AvatarService
+	stationSvc  *service.StationService
 
 	// Handlers.
-	healthH  *handler.HealthHandler
-	authH    *handler.AuthHandler
-	userH    *handler.UserHandler
-	parcelH  *handler.ParcelHandler
-	pickupH  *handler.PickupHandler
-	proxyH   *handler.ProxyHandler
-	shelfH   *handler.ShelfHandler
-	notifyH  *handler.NotifyHandler
-	statsH   *handler.StatsHandler
-	avatarH  *handler.AvatarHandler
+	healthH   *handler.HealthHandler
+	authH     *handler.AuthHandler
+	userH     *handler.UserHandler
+	parcelH   *handler.ParcelHandler
+	pickupH   *handler.PickupHandler
+	proxyH    *handler.ProxyHandler
+	shelfH    *handler.ShelfHandler
+	notifyH   *handler.NotifyHandler
+	statsH    *handler.StatsHandler
+	avatarH   *handler.AvatarHandler
+	stationH  *handler.StationHandler
 }
 
 // BuildContainer manually wires dependencies (no DI framework).
@@ -80,6 +83,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	pickupRepo := repository.NewPickupLogRepo()
 	proxyRepo := repository.NewProxyOrderRepo()
 	notifyRepo := repository.NewNotifyRepo()
+	stationRepo := repository.NewStationRepo()
 
 	// Services.
 	env := os.Getenv("APP_ENV")
@@ -96,6 +100,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	notifySvc := service.NewNotifyService(notifyRepo, db)
 	statsSvc := service.NewStatsService(db)
 	avatarSvc := service.NewAvatarService(userRepo, db)
+	stationSvc := service.NewStationService(stationRepo, db)
 	wechatSvc := service.NewWechatService(cfg.Wechat.AppID, cfg.Wechat.AppSecret)
 
 	// Handlers.
@@ -109,20 +114,22 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 	notifyH := handler.NewNotifyHandler(notifySvc)
 	statsH := handler.NewStatsHandler(statsSvc)
 	avatarH := handler.NewAvatarHandler(avatarSvc)
+	stationH := handler.NewStationHandler(stationSvc)
 
 	return &Container{
-		Cfg:        cfg,
-		DB:         db,
-		RDB:        rdb,
-		userRepo:   userRepo,
-		adminRepo:  adminRepo,
-		runnerRepo: runnerRepo,
-		smsCache:   smsCache,
-		parcelRepo: parcelRepo,
-		shelfRepo:  shelfRepo,
-		pickupRepo: pickupRepo,
+		Cfg:         cfg,
+		DB:          db,
+		RDB:         rdb,
+		userRepo:    userRepo,
+		adminRepo:   adminRepo,
+		runnerRepo:  runnerRepo,
+		smsCache:    smsCache,
+		parcelRepo:  parcelRepo,
+		shelfRepo:   shelfRepo,
+		pickupRepo:  pickupRepo,
 		proxyRepo:   proxyRepo,
 		notifyRepo:  notifyRepo,
+		stationRepo: stationRepo,
 		authSvc:     authSvc,
 		userSvc:     userSvc,
 		parcelSvc:   parcelSvc,
@@ -132,6 +139,7 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 		notifySvc:   notifySvc,
 		statsSvc:    statsSvc,
 		avatarSvc:   avatarSvc,
+		stationSvc:  stationSvc,
 		healthH:     healthH,
 		authH:       authH,
 		userH:       userH,
@@ -142,22 +150,24 @@ func BuildContainer(cfg *config.Config) (*Container, error) {
 		notifyH:     notifyH,
 		statsH:      statsH,
 		avatarH:     avatarH,
+		stationH:    stationH,
 	}, nil
 }
 
 // Handlers returns the router.Handlers bundle for router.Register.
 func (c *Container) Handlers() *router.Handlers {
 	return &router.Handlers{
-		Health: c.healthH,
-		Auth:   c.authH,
-		User:   c.userH,
-		Parcel: c.parcelH,
-		Pickup: c.pickupH,
-		Proxy:  c.proxyH,
-		Shelf:  c.shelfH,
-		Notify: c.notifyH,
-		Stats:  c.statsH,
-		Avatar: c.avatarH,
+		Health:  c.healthH,
+		Auth:    c.authH,
+		User:    c.userH,
+		Parcel:  c.parcelH,
+		Pickup:  c.pickupH,
+		Proxy:   c.proxyH,
+		Shelf:   c.shelfH,
+		Notify:  c.notifyH,
+		Stats:   c.statsH,
+		Avatar:  c.avatarH,
+		Station: c.stationH,
 	}
 }
 

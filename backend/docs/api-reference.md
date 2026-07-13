@@ -47,14 +47,18 @@ internal/
 ├── handler/    # 12 个 handler
 │   ├── auth_handler.go          → POST /auth/send-code, /auth/login, /auth/refresh
 │   │                             → POST /admin/auth/login
+│   │                             → GET  /admin/auth/sms-codes
+│   │                             → GET  /admin/get-async-routes
 │   ├── user_handler.go          → GET/PUT /user/info, POST /user/runner/apply
+│   │                             → GET/POST/PUT/DELETE /admin/users, GET /admin/users/:id
 │   │                             → GET/PUT /admin/user/runner/...
 │   ├── parcel_handler.go        → POST /parcels/scan-in, GET /parcels, ...
 │   ├── pickup_handler.go        → POST /pickup/verify, /pickup/self-checkout, ...
 │   ├── proxy_handler.go         → POST /proxy/publish, /proxy/accept/:id, ...
 │   ├── shelf_handler.go         → GET/POST/PUT /shelves, GET /shelves/occupancy
 │   ├── notify_handler.go        → GET /notifications, PUT /notifications/read
-│   ├── stats_handler.go         → GET /stats/dashboard, /stats/trend, /stats/proxy-finance
+│   ├── stats_handler.go         → GET /stats/dashboard, /stats/trend, /stats/proxy-finance, /stats/courier-check
+│   ├── station_handler.go       → GET/POST/PUT /stations
 │   ├── health.go                 → GET /health, GET /health/ready
 │   ├── response.go              → Success/Error/SuccessPaged 辅助函数
 │   └── (test files)
