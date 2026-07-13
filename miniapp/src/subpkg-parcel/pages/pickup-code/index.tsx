@@ -1,8 +1,8 @@
 import { View, Text, Canvas } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
-import { useState, useEffect } from 'react';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
+import { useState, useEffect, useRef } from 'react';
 import { useParcelStore } from '@/stores/useParcelStore';
-import drawQrcode from 'weapp-qrcode';
+import QRCode from 'qrcode-generator';
 import type { Parcel } from '@/api/types';
 import './index.scss';
 
@@ -11,6 +11,7 @@ export default function PickupCodePage() {
   const { getParcelDetail } = useParcelStore();
   const [parcel, setParcel] = useState<Parcel | null>(null);
   const [error, setError] = useState('');
+  const canvasReady = useRef(false);
 
   useEffect(() => {
     const id = router.params.id;
@@ -31,18 +32,52 @@ export default function PickupCodePage() {
     };
   }, [router.params.id]);
 
+  const drawQR = (code: string) => {
+    const query = Taro.createSelectorQuery();
+    query.select('#pickupCodeQR')
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (!res || !res[0]) return;
+        const canvas = res[0].node;
+        const ctx = canvas.getContext('2d');
+        const dpr = Taro.getSystemInfoSync().pixelRatio;
+        const size = 300;
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        ctx.scale(dpr, dpr);
+
+        const qr = QRCode(0, 'M');
+        qr.addData(code);
+        qr.make();
+        const moduleCount = qr.getModuleCount();
+        const cellSize = Math.floor(size / moduleCount);
+        const totalSize = cellSize * moduleCount;
+        const offset = Math.floor((size - totalSize) / 2);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+
+        ctx.fillStyle = '#000000';
+        for (let r = 0; r < moduleCount; r++) {
+          for (let c = 0; c < moduleCount; c++) {
+            if (qr.isDark(r, c)) {
+              ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
+            }
+          }
+        }
+      });
+  };
+
+  useDidShow(() => {
+    if (canvasReady.current && parcel && parcel.pickup_code) {
+      setTimeout(() => drawQR(parcel.pickup_code), 100);
+    }
+  });
+
   useEffect(() => {
     if (parcel && parcel.pickup_code) {
-      setTimeout(() => {
-        drawQrcode({
-          width: 350,
-          height: 350,
-          canvasId: 'pickupCodeQR',
-          text: parcel.pickup_code,
-          background: '#ffffff',
-          foreground: '#000000',
-        });
-      }, 300);
+      canvasReady.current = true;
+      setTimeout(() => drawQR(parcel.pickup_code), 500);
     }
   }, [parcel]);
 
@@ -76,9 +111,8 @@ export default function PickupCodePage() {
 
       <Canvas
         className='pickup-code__qr'
-        canvasId='pickupCodeQR'
-        width={400}
-        height={400}
+        id='pickupCodeQR'
+        type='2d'
         style='width: 600rpx; height: 600rpx;'
       />
 
