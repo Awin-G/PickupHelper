@@ -72,10 +72,13 @@ export default function ProxyPublishPage() {
 
     setLoading(true);
     try {
+      const d = new Date(deadline);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const deadlineStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
       await publishTask({
         parcel_id: selectedParcel.id,
         reward_amount: parseFloat(reward),
-        deadline: new Date(deadline).toISOString(),
+        deadline: deadlineStr,
         remark,
       });
       Taro.showToast({ title: '发布成功', icon: 'success' });
