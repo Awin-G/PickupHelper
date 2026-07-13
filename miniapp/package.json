@@ -56,6 +56,7 @@
     "@tarojs/taro": "4.2.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
+    "weapp-qrcode": "^1.0.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

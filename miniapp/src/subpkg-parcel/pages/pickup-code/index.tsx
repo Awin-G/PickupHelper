@@ -1,7 +1,8 @@
-import { View, Text } from '@tarojs/components';
+import { View, Text, Canvas } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { useState, useEffect } from 'react';
 import { useParcelStore } from '@/stores/useParcelStore';
+import drawQrcode from 'weapp-qrcode';
 import type { Parcel } from '@/api/types';
 import './index.scss';
 
@@ -29,6 +30,21 @@ export default function PickupCodePage() {
       Taro.setKeepScreenOn({ keepScreenOn: false });
     };
   }, [router.params.id]);
+
+  useEffect(() => {
+    if (parcel && parcel.pickup_code) {
+      setTimeout(() => {
+        drawQrcode({
+          width: 300,
+          height: 300,
+          canvasId: 'pickupCodeQR',
+          text: parcel.pickup_code,
+          background: '#ffffff',
+          foreground: '#000000',
+        });
+      }, 300);
+    }
+  }, [parcel]);
 
   if (error) {
     return (
@@ -58,11 +74,11 @@ export default function PickupCodePage() {
         <Text>取件码</Text>
       </View>
 
-      <View className='pickup-code__qr'>
-        <View className='pickup-code__qr-placeholder'>
-          <Text className='pickup-code__qr-text'>QR</Text>
-        </View>
-      </View>
+      <Canvas
+        className='pickup-code__qr'
+        canvasId='pickupCodeQR'
+        style='width: 600rpx; height: 600rpx;'
+      />
 
       <View className='pickup-code__digits'>
         {digits.map((d, i) => (
