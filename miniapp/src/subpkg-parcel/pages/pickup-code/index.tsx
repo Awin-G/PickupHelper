@@ -35,8 +35,8 @@ export default function PickupCodePage() {
     if (parcel && parcel.pickup_code) {
       setTimeout(() => {
         drawQrcode({
-          width: 300,
-          height: 300,
+          width: 200,
+          height: 200,
           canvasId: 'pickupCodeQR',
           text: parcel.pickup_code,
           background: '#ffffff',
@@ -77,7 +77,7 @@ export default function PickupCodePage() {
       <Canvas
         className='pickup-code__qr'
         canvasId='pickupCodeQR'
-        style='width: 600rpx; height: 600rpx;'
+        style='width: 400rpx; height: 400rpx;'
       />
 
       <View className='pickup-code__digits'>
